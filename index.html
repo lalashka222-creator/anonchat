@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>💬 Чат</title>
+    <title>📞 Чат + Звонки</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
@@ -11,16 +11,8 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:#0b0d15; color:#e0e0e0; font-family:system-ui; display:flex; height:100vh; overflow:hidden; }
-
         #sidebar {
-            width:280px;
-            background:#12161f;
-            border-right:1px solid #1e2538;
-            padding:16px;
-            display:flex;
-            flex-direction:column;
-            transition:0.3s;
-            overflow:hidden;
+            width:280px; background:#12161f; border-right:1px solid #1e2538; padding:16px; display:flex; flex-direction:column; transition:0.3s; overflow:hidden;
         }
         #sidebar.hidden { width:0; padding:0; border:none; }
         #sidebar .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
@@ -35,38 +27,18 @@
         #contactsList { flex:1; overflow-y:auto; }
         .group-item { padding:10px; border-radius:12px; cursor:pointer; margin-bottom:4px; border-left:3px solid #ffd700; }
         .group-item:hover { background:#1a2030; }
-
         #main {
-            flex:1;
-            display:flex;
-            flex-direction:column;
-            background:#0b0d15;
-            padding:16px;
-            min-width:0;
+            flex:1; display:flex; flex-direction:column; background:#0b0d15; padding:16px; min-width:0;
         }
-        #main .top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+        #main .top { display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
         #main .top button { background:transparent; border:none; color:#e0e0e0; font-size:22px; cursor:pointer; padding:4px 8px; }
+        #main .top .call-btn { background:#00cc88; border-radius:40px; padding:4px 16px; color:#000; font-weight:600; font-size:14px; }
+        #main .top .call-btn.active { background:#ff6b6b; }
         #main .top h3 { flex:1; font-weight:400; }
         #messages {
-            flex:1;
-            overflow-y:auto;
-            background:#0f111f;
-            border-radius:16px;
-            padding:12px;
-            margin-bottom:10px;
-            display:flex;
-            flex-direction:column;
-            gap:4px;
+            flex:1; overflow-y:auto; background:#0f111f; border-radius:16px; padding:12px; margin-bottom:10px; display:flex; flex-direction:column; gap:4px;
         }
-        .msg {
-            background:#1a2030;
-            padding:8px 14px;
-            border-radius:16px;
-            border-left:3px solid #6d8aff;
-            max-width:90%;
-            word-break:break-word;
-            cursor:pointer;
-        }
+        .msg { background:#1a2030; padding:8px 14px; border-radius:16px; border-left:3px solid #6d8aff; max-width:90%; word-break:break-word; }
         .msg.own { border-left-color:#00cc88; align-self:flex-end; }
         .msg .nick { font-size:12px; font-weight:600; color:#9bb1ff; }
         .msg .ai-label { color:#00ff88; font-weight:600; }
@@ -75,34 +47,11 @@
         .msg .reactions { display:flex; gap:4px; margin-top:4px; flex-wrap:wrap; }
         .msg .reactions span { cursor:pointer; padding:0 6px; border-radius:12px; background:#0b0d15; font-size:14px; }
         .msg .del-btn { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:0 10px; font-size:11px; cursor:pointer; margin-left:8px; }
-
         .input-area {
-            display:flex;
-            align-items:center;
-            gap:8px;
-            background:#12161f;
-            padding:6px 12px;
-            border-radius:40px;
-            border:1px solid #1e2538;
+            display:flex; align-items:center; gap:8px; background:#12161f; padding:6px 12px; border-radius:40px; border:1px solid #1e2538;
         }
-        .input-area input {
-            flex:1;
-            background:transparent;
-            border:none;
-            color:#fff;
-            padding:12px 0;
-            font-size:16px;
-            outline:none;
-            min-width:0;
-        }
-        .input-area button {
-            background:transparent;
-            border:none;
-            color:#e0e0e0;
-            font-size:22px;
-            cursor:pointer;
-            padding:4px 8px;
-        }
+        .input-area input { flex:1; background:transparent; border:none; color:#fff; padding:12px 0; font-size:16px; outline:none; min-width:0; }
+        .input-area button { background:transparent; border:none; color:#e0e0e0; font-size:22px; cursor:pointer; padding:4px 8px; }
         .input-area .send { background:#6d8aff; border-radius:40px; padding:8px 18px; font-weight:600; color:#fff; font-size:16px; }
         .input-area .mic { background:#ff6b6b; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:22px; cursor:pointer; transition:0.2s; }
         .input-area .mic.active { background:#ff0000; transform:scale(1.1); }
@@ -111,24 +60,25 @@
         .file-preview button { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:2px 12px; cursor:pointer; }
         #typing { font-size:13px; color:#667; font-style:italic; display:none; margin-bottom:4px; }
         .hidden { display:none; }
-        #toggleSidebar { background:transparent; border:none; color:#e0e0e0; font-size:22px; cursor:pointer; padding:0 4px; }
-
-        /* Стиль для кнопки ID */
         .id-btn { background:#2a2f45; border:none; color:#fff; border-radius:30px; padding:4px 16px; font-size:14px; cursor:pointer; }
-        .id-btn:hover { background:#3d4460; }
         .id-popup { background:#1a2030; padding:16px; border-radius:20px; border:1px solid #1e2538; text-align:center; position:absolute; top:70px; right:20px; z-index:999; min-width:200px; }
         .id-popup .close { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:4px 12px; cursor:pointer; margin-top:10px; }
+        .call-overlay {
+            position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;
+        }
+        .call-overlay .call-status { font-size:24px; margin-bottom:20px; }
+        .call-overlay .call-actions { display:flex; gap:20px; }
+        .call-overlay .call-actions button { padding:16px 32px; border-radius:40px; font-size:18px; border:none; cursor:pointer; }
+        .call-overlay .call-actions .answer { background:#00cc88; color:#000; }
+        .call-overlay .call-actions .reject { background:#ff6b6b; color:#fff; }
+        .call-overlay .call-actions .hangup { background:#ff6b6b; color:#fff; }
         @media (max-width:600px) { #sidebar { width:220px; } }
     </style>
 </head>
 <body>
 
-<!-- ПАНЕЛЬ КОНТАКТОВ -->
 <div id="sidebar">
-    <div class="header">
-        <span style="font-weight:600;">📇 Контакты</span>
-        <button id="closeSidebarBtn">✕</button>
-    </div>
+    <div class="header"><span style="font-weight:600;">📇 Контакты</span><button id="closeSidebarBtn">✕</button></div>
     <input id="searchContacts" placeholder="🔍 Поиск...">
     <div id="contactsList"></div>
     <div style="margin-top:8px; border-top:1px solid #1e2538; padding-top:8px;">
@@ -143,31 +93,23 @@
     <div id="addFriendResult" style="font-size:12px; color:#667; margin-top:4px;"></div>
 </div>
 
-<!-- ОСНОВНОЙ ЧАТ -->
 <div id="main">
     <div class="top">
         <button id="toggleSidebar">☰</button>
         <h3 id="chatLabel">💬 Выберите чат</h3>
+        <button id="callBtn" class="call-btn hidden">📞</button>
         <button id="myIdBtn" class="id-btn">👤 ID</button>
         <span id="unreadBadge" class="hidden" style="background:#ff6b6b; padding:2px 10px; border-radius:40px; font-size:12px;">🔔</span>
     </div>
-
-    <!-- Всплывашка с ID -->
     <div id="idPopup" class="id-popup hidden">
         <div style="font-size:14px; color:#667;">Ваш ID</div>
         <div style="font-size:28px; font-weight:bold; margin:6px 0;" id="myIdDisplay">—</div>
         <div style="font-size:13px; color:#667;">Ник: <span id="myNickDisplay">—</span></div>
         <button class="close" id="closeIdPopup">Закрыть</button>
     </div>
-
     <div id="typing">✏️ Печатает...</div>
     <div id="messages"></div>
-
-    <div id="filePreview" class="file-preview">
-        <span id="filePreviewName">📎 file.jpg</span>
-        <button id="filePreviewCancel">✕</button>
-    </div>
-
+    <div id="filePreview" class="file-preview"><span id="filePreviewName">📎 file.jpg</span><button id="filePreviewCancel">✕</button></div>
     <div class="input-area">
         <button id="fileBtn">📎</button>
         <input id="msgInput" placeholder="Сообщение..." autofocus>
@@ -196,11 +138,11 @@
     const storage = firebase.storage();
 
     // ==========================================
-    // 2. ID, ШИФРОВАНИЕ
+    // 2. ID (КАПСОМ), ШИФРОВАНИЕ
     // ==========================================
     function genId() {
         let r='';
-        for(let i=0;i<5;i++) r+='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random()*62)];
+        for(let i=0;i<5;i++) r+='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random()*36)];
         return r;
     }
     let myId = localStorage.getItem('my_id') || genId();
@@ -237,13 +179,12 @@
     const closeSidebarBtn = document.getElementById('closeSidebarBtn');
     const sidebar = document.getElementById('sidebar');
     const createGroupBtn = document.getElementById('createGroupBtn');
-
-    // ID попап
     const myIdBtn = document.getElementById('myIdBtn');
     const idPopup = document.getElementById('idPopup');
     const closeIdPopup = document.getElementById('closeIdPopup');
     const myIdDisplay = document.getElementById('myIdDisplay');
     const myNickDisplay = document.getElementById('myNickDisplay');
+    const callBtn = document.getElementById('callBtn');
 
     let currentChatId = null;
     let chatType = 'contact';
@@ -254,22 +195,19 @@
     let nick = localStorage.getItem('anon_nick') || 'anon';
     let selectedFile = null;
     let mediaRecorder = null;
+    let micStream = null;
+    let myPeerConnection = null;
+    let callActive = false;
+    let callData = {};
 
-    // ==========================================
-    // 4. ПОКАЗ ID
-    // ==========================================
+    // ID
     myIdDisplay.textContent = myId;
     myNickDisplay.textContent = nick;
-
-    myIdBtn.onclick = () => {
-        idPopup.classList.toggle('hidden');
-    };
-    closeIdPopup.onclick = () => {
-        idPopup.classList.add('hidden');
-    };
+    myIdBtn.onclick = () => idPopup.classList.toggle('hidden');
+    closeIdPopup.onclick = () => idPopup.classList.add('hidden');
 
     // ==========================================
-    // 5. ОНЛАЙН
+    // 4. ОНЛАЙН
     // ==========================================
     const onlineRef = db.ref('online/' + myUid);
     onlineRef.set({ online: true, lastSeen: Date.now() });
@@ -284,7 +222,7 @@
     }
 
     // ==========================================
-    // 6. ПЕЧАТАЕТ
+    // 5. ПЕЧАТАЕТ
     // ==========================================
     msgInput.onkeydown = () => {
         if(!currentChatId) return;
@@ -307,7 +245,7 @@
     }
 
     // ==========================================
-    // 7. КОНТАКТЫ
+    // 6. КОНТАКТЫ
     // ==========================================
     function loadContacts() {
         db.ref('contacts/' + myUid).once('value', snap => {
@@ -319,12 +257,10 @@
     function renderContacts() {
         const q = searchContacts.value.toLowerCase();
         contactsList.innerHTML = '';
-        let onlineCountNum = 0;
         for(let uid in contacts) {
             const data = contacts[uid];
             if(!data.nick.toLowerCase().includes(q) && !data.id.toLowerCase().includes(q)) continue;
             const isOnline = onlineUsers[uid] === true;
-            if(isOnline) onlineCountNum++;
             const div = document.createElement('div');
             div.className = 'contact-item';
             div.innerHTML = `
@@ -339,18 +275,18 @@
     window.deleteContact = function(uid) {
         if(!confirm('Удалить контакт?')) return;
         db.ref('contacts/' + myUid + '/' + uid).remove().then(() => {
-            if(currentChatId === uid && chatType === 'contact') { currentChatId=null; chatLabel.textContent='💬 Выберите чат'; messagesDiv.innerHTML=''; }
+            if(currentChatId === uid && chatType === 'contact') { currentChatId=null; chatLabel.textContent='💬 Выберите чат'; messagesDiv.innerHTML=''; callBtn.classList.add('hidden'); }
             loadContacts();
         });
     };
 
     addFriendBtn.onclick = () => {
-        const id = addFriendInput.value.trim();
+        const id = addFriendInput.value.trim().toUpperCase();
         if(id.length!==5){ addFriendResult.textContent='❌ 5 символов'; return; }
         db.ref('users').once('value', snap => {
             const users = snap.val() || {};
             for(let uid in users) {
-                if(users[uid].id && users[uid].id.toUpperCase() === id.toUpperCase()) {
+                if(users[uid].id && users[uid].id === id) {
                     db.ref('contacts/' + myUid + '/' + uid).set({ id: users[uid].id, nick: users[uid].nick || 'Без имени' })
                         .then(() => { addFriendResult.textContent='✅ Добавлен'; addFriendInput.value=''; loadContacts(); });
                     return;
@@ -361,7 +297,7 @@
     };
 
     // ==========================================
-    // 8. ГРУППЫ
+    // 7. ГРУППЫ
     // ==========================================
     function loadGroups() {
         db.ref('groups').once('value', snap => {
@@ -396,9 +332,9 @@
         const ids = prompt('Введите ID участников через запятую:');
         if(ids) {
             ids.split(',').forEach(id => {
-                id = id.trim();
+                id = id.trim().toUpperCase();
                 for(let uid in contacts) {
-                    if(contacts[uid].id.toUpperCase() === id.toUpperCase()) {
+                    if(contacts[uid].id === id) {
                         members[uid] = { nick: contacts[uid].nick };
                     }
                 }
@@ -408,7 +344,7 @@
     };
 
     // ==========================================
-    // 9. ОТКРЫТЬ ЧАТ
+    // 8. ОТКРЫТЬ ЧАТ
     // ==========================================
     window.openChat = function(id, type) {
         currentChatId = id;
@@ -419,20 +355,25 @@
         unreadCount = 0;
         messagesDiv.innerHTML = '';
         typingDiv.style.display = 'none';
-        if(type === 'contact') getOnlineStatus(id);
+        if(type === 'contact') {
+            getOnlineStatus(id);
+            callBtn.classList.remove('hidden');
+        } else {
+            callBtn.classList.add('hidden');
+        }
         loadMessages(id, type);
         listenTyping();
     };
 
     // ==========================================
-    // 10. СООБЩЕНИЯ
+    // 9. СООБЩЕНИЯ
     // ==========================================
     function loadMessages(chatId, type) {
         const ref = db.ref('chats/' + type + '/' + chatId);
-        ref.limitToLast(50).on('child_added', snap => renderMessage(snap.val(), snap.key, type, chatId));
+        ref.limitToLast(50).on('child_added', snap => renderMessage(snap.val(), snap.key));
     }
 
-    function renderMessage(data, msgId) {
+    function renderMessage(data) {
         const div = document.createElement('div');
         div.className = 'msg';
         if(data.from === myUid) div.classList.add('own');
@@ -451,17 +392,17 @@
         let reactionsHtml = '';
         if(data.reactions) {
             for(let emoji in data.reactions) {
-                reactionsHtml += `<span onclick="addReaction('${msgId}','${emoji}')">${emoji} ${Object.keys(data.reactions[emoji]).length}</span>`;
+                reactionsHtml += `<span onclick="addReaction('${data.msgId}','${emoji}')">${emoji} ${Object.keys(data.reactions[emoji]).length}</span>`;
             }
         }
 
         div.innerHTML = `
-            <div class="nick">${sender} ${data.from === myUid ? `<button class="del-btn" onclick="deleteForAll('${msgId}')">🗑️</button>` : ''}</div>
+            <div class="nick">${sender} ${data.from === myUid ? `<button class="del-btn" onclick="deleteForAll('${data.msgId}')">🗑️</button>` : ''}</div>
             ${content}
             <div class="reactions">
-                <span onclick="addReaction('${msgId}','👍')">👍</span>
-                <span onclick="addReaction('${msgId}','❤️')">❤️</span>
-                <span onclick="addReaction('${msgId}','🔥')">🔥</span>
+                <span onclick="addReaction('${data.msgId}','👍')">👍</span>
+                <span onclick="addReaction('${data.msgId}','❤️')">❤️</span>
+                <span onclick="addReaction('${data.msgId}','🔥')">🔥</span>
                 ${reactionsHtml}
             </div>
         `;
@@ -487,12 +428,13 @@
     };
 
     // ==========================================
-    // 11. ОТПРАВКА
+    // 10. ОТПРАВКА
     // ==========================================
     function sendToFirebase(data) {
         if(!currentChatId) { alert('Выберите чат'); return; }
         const ref = db.ref('chats/' + chatType + '/' + currentChatId);
-        ref.push({ from: myUid, timestamp: Date.now(), ...data });
+        const payload = { from: myUid, timestamp: Date.now(), msgId: Date.now() + '_' + Math.random().toString(36).slice(2,6), ...data };
+        ref.push(payload);
     }
 
     function sendMessage() {
@@ -526,7 +468,7 @@
     }
 
     // ==========================================
-    // 12. ИИ
+    // 11. ИИ
     // ==========================================
     async function askAI(question) {
         try {
@@ -536,7 +478,7 @@
             if(!data.AbstractText) answer += `\n🔗 Поиск: https://google.com/search?q=${encodeURIComponent(question)}`;
             sendToFirebase({ ai: answer });
         } catch {
-            sendToFirebase({ ai: '⚠️ Ошибка, попробуй позже. 🔗 https://google.com/search?q=' + encodeURIComponent(question) });
+            sendToFirebase({ ai: '⚠️ Ошибка. 🔗 https://google.com/search?q=' + encodeURIComponent(question) });
         }
         msgInput.value = '';
     }
@@ -548,7 +490,7 @@
     };
 
     // ==========================================
-    // 13. ФАЙЛЫ
+    // 12. ФАЙЛЫ
     // ==========================================
     fileBtn.onclick = () => fileInput.click();
     fileInput.onchange = (e) => {
@@ -565,11 +507,29 @@
     };
 
     // ==========================================
-    // 14. ГОЛОСОВЫЕ (зажатие)
+    // 13. ГОЛОСОВЫЕ (зажатие + клавиша F)
     // ==========================================
-    let micStream = null;
-    micBtn.onmousedown = async () => {
+    micBtn.onmousedown = startRecording;
+    micBtn.onmouseup = stopRecording;
+    micBtn.onmouseleave = stopRecording;
+
+    document.addEventListener('keydown', (e) => {
+        if(e.key === 'f' || e.key === 'F') {
+            if(!currentChatId) return;
+            if(!recording) startRecording();
+        }
+    });
+    document.addEventListener('keyup', (e) => {
+        if(e.key === 'f' || e.key === 'F') {
+            if(recording) stopRecording();
+        }
+    });
+
+    let recording = false;
+
+    async function startRecording() {
         if(!currentChatId) { alert('Выберите чат'); return; }
+        if(recording) return;
         try {
             micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(micStream);
@@ -585,23 +545,130 @@
                 if(micStream) micStream.getTracks().forEach(t => t.stop());
             };
             mediaRecorder.start();
+            recording = true;
             micBtn.classList.add('active');
             micBtn.textContent = '⏹️';
         } catch { alert('Нет микрофона'); }
-    };
-    micBtn.onmouseup = () => {
+    }
+
+    function stopRecording() {
         if(mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
+            recording = false;
             micBtn.classList.remove('active');
             micBtn.textContent = '🎤';
         }
-    };
-    micBtn.onmouseleave = () => {
-        if(mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-            micBtn.classList.remove('active');
-            micBtn.textContent = '🎤';
+    }
+
+    // ==========================================
+    // 14. ЗВОНКИ (WebRTC)
+    // ==========================================
+    let callListeners = {};
+
+    callBtn.onclick = () => {
+        if(!currentChatId || chatType !== 'contact') return;
+        if(callActive) {
+            hangupCall();
+            return;
         }
+        const targetUid = currentChatId;
+        // Проверяем онлайн
+        if(!onlineUsers[targetUid]) {
+            alert('Пользователь не в сети');
+            return;
+        }
+        // Отправляем сигнал о звонке
+        db.ref('calls/' + targetUid).set({
+            from: myUid,
+            fromId: myId,
+            fromNick: nick,
+            type: 'incoming',
+            timestamp: Date.now()
+        });
+        callActive = true;
+        callBtn.textContent = '📞 Активен';
+        callBtn.classList.add('active');
+        // Слушаем ответ
+        db.ref('calls/' + myUid).on('value', snap => {
+            const data = snap.val();
+            if(!data) return;
+            if(data.type === 'accept') {
+                startCall(data.from);
+            }
+            if(data.type === 'reject' || data.type === 'hangup') {
+                endCall();
+            }
+        });
+        // Уведомление о звонке
+        sendToFirebase({ text: enc('📞 Вызов отправлен...') });
+    };
+
+    // Слушаем входящие звонки
+    db.ref('calls/' + myUid).on('value', snap => {
+        const data = snap.val();
+        if(!data) return;
+        if(data.type === 'incoming' && data.from !== myUid) {
+            showIncomingCall(data.from, data.fromNick);
+        }
+    });
+
+    function showIncomingCall(fromUid, fromNick) {
+        const overlay = document.createElement('div');
+        overlay.className = 'call-overlay';
+        overlay.id = 'callOverlay';
+        overlay.innerHTML = `
+            <div class="call-status">📞 Входящий звонок от <strong>${fromNick}</strong></div>
+            <div class="call-actions">
+                <button class="answer" onclick="acceptCall('${fromUid}')">✅ Ответить</button>
+                <button class="reject" onclick="rejectCall('${fromUid}')">❌ Отклонить</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    window.acceptCall = function(fromUid) {
+        document.getElementById('callOverlay')?.remove();
+        db.ref('calls/' + fromUid).set({ type: 'accept', from: myUid });
+        startCall(fromUid);
+    };
+
+    window.rejectCall = function(fromUid) {
+        document.getElementById('callOverlay')?.remove();
+        db.ref('calls/' + fromUid).set({ type: 'reject', from: myUid });
+    };
+
+    function startCall(targetUid) {
+        callActive = true;
+        callBtn.textContent = '📞 Активен';
+        callBtn.classList.add('active');
+        // Здесь можно реализовать WebRTC аудио-соединение
+        // Для простоты показываем статус
+        const statusDiv = document.createElement('div');
+        statusDiv.id = 'callStatus';
+        statusDiv.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#12161f;padding:20px;border-radius:20px;border:1px solid #1e2538;z-index:999;text-align:center;';
+        statusDiv.innerHTML = `
+            <div style="font-size:24px;">🔊 Звонок активен</div>
+            <button onclick="hangupCall()" style="background:#ff6b6b;border:none;color:#fff;padding:12px 24px;border-radius:40px;margin-top:12px;font-size:18px;cursor:pointer;">Положить трубку</button>
+        `;
+        document.body.appendChild(statusDiv);
+        // Удаляем старые слушатели
+        db.ref('calls/' + myUid).off();
+    }
+
+    function endCall() {
+        document.getElementById('callStatus')?.remove();
+        callActive = false;
+        callBtn.textContent = '📞';
+        callBtn.classList.remove('active');
+        db.ref('calls/' + myUid).off();
+        db.ref('calls/' + currentChatId).off();
+    }
+
+    window.hangupCall = function() {
+        if(currentChatId) {
+            db.ref('calls/' + currentChatId).set({ type: 'hangup', from: myUid });
+        }
+        endCall();
     };
 
     // ==========================================
@@ -619,11 +686,14 @@
     // 17. СОБЫТИЯ
     // ==========================================
     sendBtn.onclick = sendMessage;
-    msgInput.onkeydown = (e) => { if(e.key === 'Enter') { e.preventDefault(); sendMessage(); } };
-
+    msgInput.onkeydown = (e) => {
+        if(e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
     toggleSidebar.onclick = () => sidebar.classList.toggle('hidden');
     closeSidebarBtn.onclick = () => sidebar.classList.add('hidden');
-
     searchContacts.oninput = renderContacts;
 
     // ==========================================
@@ -632,7 +702,6 @@
     loadContacts();
     loadGroups();
     chatLabel.textContent = '💬 Выберите чат';
-
     console.log('🔐 Твой ID:', myId);
 </script>
 </body>
