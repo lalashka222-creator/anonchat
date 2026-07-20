@@ -12,7 +12,6 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:#0b0d15; color:#e0e0e0; font-family:system-ui; display:flex; height:100vh; overflow:hidden; }
 
-        /* Панель контактов */
         #sidebar {
             width:280px;
             background:#12161f;
@@ -37,7 +36,6 @@
         .group-item { padding:10px; border-radius:12px; cursor:pointer; margin-bottom:4px; border-left:3px solid #ffd700; }
         .group-item:hover { background:#1a2030; }
 
-        /* Основной чат */
         #main {
             flex:1;
             display:flex;
@@ -47,7 +45,7 @@
             min-width:0;
         }
         #main .top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
-        #main .top button { background:transparent; border:none; color:#e0e0e0; font-size:22px; cursor:pointer; }
+        #main .top button { background:transparent; border:none; color:#e0e0e0; font-size:22px; cursor:pointer; padding:4px 8px; }
         #main .top h3 { flex:1; font-weight:400; }
         #messages {
             flex:1;
@@ -78,7 +76,6 @@
         .msg .reactions span { cursor:pointer; padding:0 6px; border-radius:12px; background:#0b0d15; font-size:14px; }
         .msg .del-btn { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:0 10px; font-size:11px; cursor:pointer; margin-left:8px; }
 
-        /* Ввод */
         .input-area {
             display:flex;
             align-items:center;
@@ -112,11 +109,15 @@
         .file-preview { display:none; align-items:center; gap:8px; background:#1a2030; padding:6px 12px; border-radius:30px; margin-top:6px; }
         .file-preview span { font-size:13px; }
         .file-preview button { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:2px 12px; cursor:pointer; }
-
         #typing { font-size:13px; color:#667; font-style:italic; display:none; margin-bottom:4px; }
         .hidden { display:none; }
-
         #toggleSidebar { background:transparent; border:none; color:#e0e0e0; font-size:22px; cursor:pointer; padding:0 4px; }
+
+        /* Стиль для кнопки ID */
+        .id-btn { background:#2a2f45; border:none; color:#fff; border-radius:30px; padding:4px 16px; font-size:14px; cursor:pointer; }
+        .id-btn:hover { background:#3d4460; }
+        .id-popup { background:#1a2030; padding:16px; border-radius:20px; border:1px solid #1e2538; text-align:center; position:absolute; top:70px; right:20px; z-index:999; min-width:200px; }
+        .id-popup .close { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:4px 12px; cursor:pointer; margin-top:10px; }
         @media (max-width:600px) { #sidebar { width:220px; } }
     </style>
 </head>
@@ -147,18 +148,26 @@
     <div class="top">
         <button id="toggleSidebar">☰</button>
         <h3 id="chatLabel">💬 Выберите чат</h3>
+        <button id="myIdBtn" class="id-btn">👤 ID</button>
         <span id="unreadBadge" class="hidden" style="background:#ff6b6b; padding:2px 10px; border-radius:40px; font-size:12px;">🔔</span>
     </div>
+
+    <!-- Всплывашка с ID -->
+    <div id="idPopup" class="id-popup hidden">
+        <div style="font-size:14px; color:#667;">Ваш ID</div>
+        <div style="font-size:28px; font-weight:bold; margin:6px 0;" id="myIdDisplay">—</div>
+        <div style="font-size:13px; color:#667;">Ник: <span id="myNickDisplay">—</span></div>
+        <button class="close" id="closeIdPopup">Закрыть</button>
+    </div>
+
     <div id="typing">✏️ Печатает...</div>
     <div id="messages"></div>
 
-    <!-- Превью файла -->
     <div id="filePreview" class="file-preview">
         <span id="filePreviewName">📎 file.jpg</span>
         <button id="filePreviewCancel">✕</button>
     </div>
 
-    <!-- Строка ввода -->
     <div class="input-area">
         <button id="fileBtn">📎</button>
         <input id="msgInput" placeholder="Сообщение..." autofocus>
@@ -229,8 +238,15 @@
     const sidebar = document.getElementById('sidebar');
     const createGroupBtn = document.getElementById('createGroupBtn');
 
+    // ID попап
+    const myIdBtn = document.getElementById('myIdBtn');
+    const idPopup = document.getElementById('idPopup');
+    const closeIdPopup = document.getElementById('closeIdPopup');
+    const myIdDisplay = document.getElementById('myIdDisplay');
+    const myNickDisplay = document.getElementById('myNickDisplay');
+
     let currentChatId = null;
-    let chatType = 'contact'; // contact | group
+    let chatType = 'contact';
     let contacts = {};
     let groups = {};
     let onlineUsers = {};
@@ -238,10 +254,22 @@
     let nick = localStorage.getItem('anon_nick') || 'anon';
     let selectedFile = null;
     let mediaRecorder = null;
-    let recording = false;
 
     // ==========================================
-    // 4. ОНЛАЙН
+    // 4. ПОКАЗ ID
+    // ==========================================
+    myIdDisplay.textContent = myId;
+    myNickDisplay.textContent = nick;
+
+    myIdBtn.onclick = () => {
+        idPopup.classList.toggle('hidden');
+    };
+    closeIdPopup.onclick = () => {
+        idPopup.classList.add('hidden');
+    };
+
+    // ==========================================
+    // 5. ОНЛАЙН
     // ==========================================
     const onlineRef = db.ref('online/' + myUid);
     onlineRef.set({ online: true, lastSeen: Date.now() });
@@ -256,7 +284,7 @@
     }
 
     // ==========================================
-    // 5. ПЕЧАТАЕТ
+    // 6. ПЕЧАТАЕТ
     // ==========================================
     msgInput.onkeydown = () => {
         if(!currentChatId) return;
@@ -279,7 +307,7 @@
     }
 
     // ==========================================
-    // 6. КОНТАКТЫ
+    // 7. КОНТАКТЫ
     // ==========================================
     function loadContacts() {
         db.ref('contacts/' + myUid).once('value', snap => {
@@ -333,7 +361,7 @@
     };
 
     // ==========================================
-    // 7. ГРУППЫ
+    // 8. ГРУППЫ
     // ==========================================
     function loadGroups() {
         db.ref('groups').once('value', snap => {
@@ -380,7 +408,7 @@
     };
 
     // ==========================================
-    // 8. ОТКРЫТЬ ЧАТ
+    // 9. ОТКРЫТЬ ЧАТ
     // ==========================================
     window.openChat = function(id, type) {
         currentChatId = id;
@@ -397,7 +425,7 @@
     };
 
     // ==========================================
-    // 9. СООБЩЕНИЯ
+    // 10. СООБЩЕНИЯ
     // ==========================================
     function loadMessages(chatId, type) {
         const ref = db.ref('chats/' + type + '/' + chatId);
@@ -459,7 +487,7 @@
     };
 
     // ==========================================
-    // 10. ОТПРАВКА
+    // 11. ОТПРАВКА
     // ==========================================
     function sendToFirebase(data) {
         if(!currentChatId) { alert('Выберите чат'); return; }
@@ -480,7 +508,6 @@
             sendToFirebase({ text: enc(text) });
         }
         if(selectedFile) {
-            const ext = selectedFile.name.split('.').pop();
             const type = selectedFile.type.startsWith('image/') ? 'image' : 
                          selectedFile.type.startsWith('video/') ? 'video' : 'audio';
             const path = 'files/' + myUid + '/' + Date.now() + '_' + selectedFile.name;
@@ -499,7 +526,7 @@
     }
 
     // ==========================================
-    // 11. ИИ
+    // 12. ИИ
     // ==========================================
     async function askAI(question) {
         try {
@@ -521,7 +548,7 @@
     };
 
     // ==========================================
-    // 12. ФАЙЛЫ
+    // 13. ФАЙЛЫ
     // ==========================================
     fileBtn.onclick = () => fileInput.click();
     fileInput.onchange = (e) => {
@@ -538,7 +565,7 @@
     };
 
     // ==========================================
-    // 13. ГОЛОСОВЫЕ (зажатие)
+    // 14. ГОЛОСОВЫЕ (зажатие)
     // ==========================================
     let micStream = null;
     micBtn.onmousedown = async () => {
@@ -578,18 +605,18 @@
     };
 
     // ==========================================
-    // 14. ОБНОВЛЕНИЕ В РЕАЛЬНОМ ВРЕМЕНИ
+    // 15. ОБНОВЛЕНИЕ В РЕАЛЬНОМ ВРЕМЕНИ
     // ==========================================
     db.ref('contacts/' + myUid).on('value', loadContacts);
     db.ref('groups').on('value', loadGroups);
 
     // ==========================================
-    // 15. СОХРАНЕНИЕ ПРОФИЛЯ
+    // 16. СОХРАНЕНИЕ ПРОФИЛЯ
     // ==========================================
     db.ref('users/' + myUid).set({ id: myId, nick, lastSeen: Date.now() });
 
     // ==========================================
-    // 16. СОБЫТИЯ
+    // 17. СОБЫТИЯ
     // ==========================================
     sendBtn.onclick = sendMessage;
     msgInput.onkeydown = (e) => { if(e.key === 'Enter') { e.preventDefault(); sendMessage(); } };
@@ -600,7 +627,7 @@
     searchContacts.oninput = renderContacts;
 
     // ==========================================
-    // 17. ЗАПУСК
+    // 18. ЗАПУСК
     // ==========================================
     loadContacts();
     loadGroups();
