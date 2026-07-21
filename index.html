@@ -3,202 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💬 Чат</title>
+    <title>📞 Чат</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            background: #0b0d15;
-            color: #e0e0e0;
-            font-family: system-ui, -apple-system, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 16px;
-            transition: background 0.3s, color 0.3s;
-        }
-
-        /* --- ТЕМЫ --- */
-        body.light {
-            background: #f0f2f5;
-            color: #111;
-        }
-        body.light .app { background: #ffffff; border-color: #d0d0d0; }
-        body.light .msg { background: #e4e6eb; }
-        body.light .input-area { background: #f0f2f5; border-color: #d0d0d0; }
-        body.light .input-area input { color: #111; }
-
-        body.yellow {
-            background: #fef9e0;
-            color: #1e1a0a;
-        }
-        body.yellow .app { background: #fffbe6; border-color: #e6d8a0; }
-        body.yellow .msg { background: #f5edc0; }
-        body.yellow .input-area { background: #f5edc0; border-color: #e6d8a0; }
-        body.yellow .input-area input { color: #1e1a0a; }
-
-        .app {
-            max-width: 500px;
-            width: 100%;
-            background: #12161f;
-            padding: 24px 20px 20px;
-            border-radius: 32px;
-            border: 1px solid #1e2538;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            transition: background 0.3s, border 0.3s;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .header h2 {
-            font-size: 22px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #6d8aff, #b47aff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .theme-btn {
-            background: #1a2030;
-            border: none;
-            color: #e0e0e0;
-            font-size: 20px;
-            padding: 6px 14px;
-            border-radius: 40px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .theme-btn:hover { background: #2a2f45; }
-
-        #messages {
-            height: 340px;
-            overflow-y: auto;
-            background: #0b0d15;
-            padding: 14px;
-            border-radius: 20px;
-            margin-bottom: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            transition: background 0.3s;
-        }
-        body.light #messages { background: #f0f2f5; }
-        body.yellow #messages { background: #fef9e0; }
-
-        .msg {
-            background: #1a2030;
-            padding: 10px 16px;
-            border-radius: 18px;
-            max-width: 85%;
-            word-break: break-word;
-            border-left: 3px solid #6d8aff;
-            transition: background 0.3s;
-        }
-        .msg .nick {
-            font-size: 12px;
-            font-weight: 600;
-            color: #9bb1ff;
-            margin-bottom: 2px;
-        }
-        .msg .text {
-            font-size: 15px;
-            line-height: 1.4;
-        }
-        .msg.own {
-            align-self: flex-end;
-            border-left-color: #00cc88;
-        }
-        .msg.own .nick { color: #00cc88; }
-
-        .input-area {
-            display: flex;
-            gap: 10px;
-            background: #0b0d15;
-            padding: 6px 6px 6px 18px;
-            border-radius: 40px;
-            border: 1px solid #1e2538;
-            transition: background 0.3s, border 0.3s;
-        }
-        .input-area input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #e0e0e0;
-            font-size: 15px;
-            padding: 12px 0;
-            outline: none;
-            min-width: 0;
-        }
-        .input-area input::placeholder { color: #667; }
-        .input-area button {
-            background: #6d8aff;
-            border: none;
-            padding: 12px 22px;
-            border-radius: 40px;
-            font-weight: 600;
-            color: #fff;
-            font-size: 15px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .input-area button:hover { background: #5a73e0; }
-
-        .id-btn {
-            background: #1a2030;
-            border: 1px solid #1e2538;
-            color: #e0e0e0;
-            padding: 6px 14px;
-            border-radius: 40px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .id-btn:hover { background: #2a2f45; }
-        .footer {
-            font-size: 12px;
-            color: #667;
-            text-align: center;
-            margin-top: 16px;
-        }
-
-        /* Адаптив */
-        @media (max-width: 500px) {
-            .app { padding: 16px; }
-            #messages { height: 260px; }
-            .input-area input { font-size: 14px; }
-            .input-area button { padding: 10px 16px; font-size: 14px; }
-        }
+        body { background:#0b0d15; color:#e0e0e0; font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; padding:16px; }
+        .app { width:100%; max-width:500px; background:#12161f; padding:20px; border-radius:30px; border:1px solid #1e2538; }
+        h2 { margin-bottom:12px; }
+        #messages { height:300px; overflow-y:auto; background:#0b0d15; padding:12px; border-radius:16px; margin-bottom:10px; }
+        .msg { background:#1a2030; padding:8px 14px; border-radius:14px; margin-bottom:4px; max-width:85%; word-break:break-word; }
+        .msg.own { align-self:flex-end; background:#2a2f45; }
+        .msg .nick { font-size:12px; color:#9bb1ff; }
+        .msg img { max-width:100%; border-radius:10px; margin-top:4px; }
+        .msg audio { width:100%; margin-top:4px; border-radius:30px; }
+        .flex { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+        input { flex:1; padding:12px; border-radius:30px; border:1px solid #1e2538; background:#0b0d15; color:#fff; font-size:15px; min-width:120px; }
+        button { padding:12px 18px; border-radius:30px; border:none; background:#6d8aff; color:#fff; font-weight:600; cursor:pointer; }
+        .call-btn { background:#00cc88; }
+        .hangup { background:#ff6b6b; }
+        .file-btn { background:#ffaa44; }
+        .hidden { display:none; }
+        .flex.actions { margin-top:10px; gap:6px; }
+        .flex.actions button { flex:1; font-size:13px; padding:10px; }
+        #remoteVideo { width:100%; border-radius:16px; background:#000; margin-top:10px; display:none; }
     </style>
 </head>
 <body>
-
-<div class="app" id="app">
-    <div class="header">
-        <h2>💬 Чат</h2>
-        <div style="display:flex; gap:8px; align-items:center;">
-            <button class="id-btn" id="myIdBtn">👤 ID</button>
-            <button class="theme-btn" id="themeBtn">🎨</button>
-        </div>
-    </div>
-
+<div class="app">
+    <h2>📞 Чат</h2>
     <div id="messages"></div>
-
-    <div class="input-area">
-        <input id="msgInput" placeholder="Сообщение..." autofocus>
+    <div class="flex">
+        <input id="msgInput" placeholder="Сообщение...">
         <button id="sendBtn">➤</button>
     </div>
-
-    <div class="footer">🔒 Данные шифруются. Только ты и твой собеседник.</div>
+    <div class="flex actions">
+        <button id="fileBtn" class="file-btn">📎 Файл</button>
+        <button id="callBtn" class="call-btn">📞 Звонок</button>
+        <button id="hangupBtn" class="hangup hidden">📴 Сбросить</button>
+    </div>
+    <input type="file" id="fileInput" style="display:none;" accept="image/*,audio/*,video/*">
+    <video id="remoteVideo" autoplay></video>
 </div>
 
 <script>
     // ============================
-    // 1. FIREBASE (твой конфиг)
+    // 1. FIREBASE
     // ============================
     const firebaseConfig = {
         apiKey: "AIzaSyCPiopo6vRsTyhUnoDpztKNFa84aYzS34s",
@@ -211,68 +62,167 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const storage = firebase.storage();
 
     // ============================
-    // 2. ID ПОЛЬЗОВАТЕЛЯ
+    // 2. ID
     // ============================
-    let myId = localStorage.getItem('my_id') || prompt('Придумай ID (5 символов, только буквы/цифры):');
+    let myId = localStorage.getItem('my_id') || prompt('Введите ID (5 символов):');
     myId = myId.toUpperCase();
     localStorage.setItem('my_id', myId);
     const myUid = 'anon_' + myId;
 
     // ============================
-    // 3. ТЕМЫ
-    // ============================
-    const themes = ['dark', 'light', 'yellow'];
-    let themeIndex = parseInt(localStorage.getItem('themeIndex')) || 0;
-    document.body.className = themes[themeIndex] === 'dark' ? '' : themes[themeIndex];
-    document.getElementById('themeBtn').onclick = () => {
-        themeIndex = (themeIndex + 1) % themes.length;
-        document.body.className = themes[themeIndex] === 'dark' ? '' : themes[themeIndex];
-        localStorage.setItem('themeIndex', themeIndex);
-    };
-
-    // ============================
-    // 4. ПОКАЗАТЬ ID
-    // ============================
-    document.getElementById('myIdBtn').onclick = () => {
-        alert('🔑 Твой ID: ' + myId);
-    };
-
-    // ============================
-    // 5. ЧАТ (текст)
+    // 3. ЧАТ
     // ============================
     const messagesDiv = document.getElementById('messages');
     const msgInput = document.getElementById('msgInput');
     const sendBtn = document.getElementById('sendBtn');
 
-    // Загружаем сообщения
     const chatRef = db.ref('chats/' + myUid);
     chatRef.limitToLast(50).on('child_added', snap => {
         const data = snap.val();
         const div = document.createElement('div');
         div.className = 'msg';
         if (data.from === myId) div.classList.add('own');
-        div.innerHTML = `
-            <div class="nick">${data.from}</div>
-            <div class="text">${data.text}</div>
-        `;
+
+        let content = `<div class="nick">${data.from}</div>`;
+        if (data.text) content += `<div>${data.text}</div>`;
+        if (data.image) content += `<img src="${data.image}" alt="image">`;
+        if (data.audio) content += `<audio controls src="${data.audio}"></audio>`;
+        if (data.video) content += `<video controls src="${data.video}" style="max-width:100%; max-height:200px; border-radius:10px;"></video>`;
+
+        div.innerHTML = content;
         messagesDiv.appendChild(div);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
 
-    // Отправка
+    // ============================
+    // 4. ОТПРАВКА ТЕКСТА
+    // ============================
     function sendMessage() {
         const text = msgInput.value.trim();
         if (!text) return;
-        chatRef.push({ from: myId, text, timestamp: Date.now() });
+        chatRef.push({ from: myId, text });
         msgInput.value = '';
     }
-
     sendBtn.onclick = sendMessage;
-    msgInput.onkeydown = (e) => {
-        if (e.key === 'Enter') sendMessage();
+    msgInput.onkeydown = (e) => { if (e.key === 'Enter') sendMessage(); };
+
+    // ============================
+    // 5. ФАЙЛЫ (фото, аудио, видео)
+    // ============================
+    document.getElementById('fileBtn').onclick = () => document.getElementById('fileInput').click();
+    document.getElementById('fileInput').onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const type = file.type.startsWith('image/') ? 'image' :
+                     file.type.startsWith('audio/') ? 'audio' : 'video';
+        const path = 'files/' + myUid + '/' + Date.now() + '_' + file.name;
+        const ref = storage.ref(path);
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+        const payload = {};
+        payload[type] = url;
+        chatRef.push({ from: myId, ...payload });
+        fileInput.value = '';
     };
+
+    // ============================
+    // 6. ЗВОНКИ (WebRTC)
+    // ============================
+    let pc = null;
+    let localStream = null;
+    const callBtn = document.getElementById('callBtn');
+    const hangupBtn = document.getElementById('hangupBtn');
+    const remoteVideo = document.getElementById('remoteVideo');
+
+    const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    // Входящий звонок
+    db.ref('calls/' + myUid).on('value', async snap => {
+        const data = snap.val();
+        if (!data) return;
+        if (data.type === 'incoming' && data.from !== myUid) {
+            if (confirm('📞 Входящий звонок от ' + data.from + '. Ответить?')) {
+                await createPeerConnection(data.fromUid);
+                await createAnswer(data.fromUid);
+                db.ref('calls/' + data.fromUid).set({ type: 'answer', from: myUid });
+                callBtn.classList.add('hidden');
+                hangupBtn.classList.remove('hidden');
+            } else {
+                db.ref('calls/' + myUid).remove();
+            }
+        }
+        if (data.type === 'answer') {
+            await createPeerConnection(data.from);
+            await createOffer(data.from);
+        }
+        if (data.type === 'offer') {
+            await handleOffer(data);
+        }
+        if (data.type === 'hangup') {
+            endCall();
+        }
+    });
+
+    callBtn.onclick = async () => {
+        const targetId = prompt('Введите ID собеседника:');
+        if (!targetId) return;
+        const targetUid = 'anon_' + targetId.toUpperCase();
+        db.ref('calls/' + targetUid).set({ type: 'incoming', from: myId, fromUid: myUid });
+        callBtn.classList.add('hidden');
+        hangupBtn.classList.remove('hidden');
+    };
+
+    async function createPeerConnection(targetUid) {
+        pc = new RTCPeerConnection(configuration);
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+        pc.ontrack = e => {
+            remoteVideo.srcObject = e.streams[0];
+            remoteVideo.style.display = 'block';
+        };
+        pc.onicecandidate = e => {
+            if (e.candidate) {
+                db.ref('calls/' + targetUid + '/candidate').set(e.candidate);
+            }
+        };
+    }
+
+    async function createOffer(targetUid) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        db.ref('calls/' + targetUid).set({ type: 'offer', offer });
+    }
+
+    async function createAnswer(targetUid) {
+        const snap = await db.ref('calls/' + targetUid + '/offer').once('value');
+        const offer = snap.val();
+        if (!offer) return;
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        db.ref('calls/' + targetUid + '/answer').set(answer);
+    }
+
+    async function handleOffer(data) {
+        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        db.ref('calls/' + data.from + '/answer').set(answer);
+    }
+
+    function endCall() {
+        if (pc) pc.close();
+        if (localStream) localStream.getTracks().forEach(t => t.stop());
+        remoteVideo.style.display = 'none';
+        callBtn.classList.remove('hidden');
+        hangupBtn.classList.add('hidden');
+        db.ref('calls/' + myUid).remove();
+    }
+
+    hangupBtn.onclick = endCall;
 </script>
 </body>
 </html>
