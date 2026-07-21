@@ -20,7 +20,7 @@
             transition: background 0.3s, color 0.3s;
         }
 
-        /* --- ТЕМЫ (твои) --- */
+        /* --- ТЕМЫ --- */
         body.light {
             background: #f0f2f5;
             color: #111;
@@ -166,6 +166,7 @@
             margin-top: 16px;
         }
 
+        /* Адаптив */
         @media (max-width: 500px) {
             .app { padding: 16px; }
             #messages { height: 260px; }
@@ -196,9 +197,9 @@
 </div>
 
 <script>
-    // ============================================
-    // 1. FIREBASE (твой конфиг — без изменений)
-    // ============================================
+    // ============================
+    // 1. FIREBASE (твой конфиг)
+    // ============================
     const firebaseConfig = {
         apiKey: "AIzaSyCPiopo6vRsTyhUnoDpztKNFa84aYzS34s",
         authDomain: "sanyachats-2493a.firebaseapp.com",
@@ -211,130 +212,60 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ============================================
-    // 2. ЕЖЕДНЕВНАЯ СМЕНА ID (анонимность)
-    // ============================================
-    function getDailyId() {
-        const today = new Date().toISOString().slice(0, 10);
-        const stored = localStorage.getItem('anon_daily_id');
-        const storedDate = localStorage.getItem('anon_daily_date');
-        if (stored && storedDate === today) return stored;
-        const newId = 'U' + Math.random().toString(36).substring(2, 8).toUpperCase();
-        localStorage.setItem('anon_daily_id', newId);
-        localStorage.setItem('anon_daily_date', today);
-        return newId;
-    }
-
-    const myId = getDailyId();
+    // ============================
+    // 2. ID ПОЛЬЗОВАТЕЛЯ
+    // ============================
+    let myId = localStorage.getItem('my_id') || prompt('Придумай ID (5 символов, только буквы/цифры):');
+    myId = myId.toUpperCase();
+    localStorage.setItem('my_id', myId);
     const myUid = 'anon_' + myId;
 
-    // ============================================
-    // 3. КРИПТОГРАФИЯ (AES-GCM) — E2EE
-    // ============================================
-    async function deriveKey(id) {
-        const encoder = new TextEncoder();
-        const keyMaterial = await crypto.subtle.importKey(
-            'raw',
-            encoder.encode(id + '::s0lT::2026'),
-            { name: 'PBKDF2' },
-            false,
-            ['deriveKey']
-        );
-        return await crypto.subtle.deriveKey(
-            { name: 'PBKDF2', salt: encoder.encode('chat_salt'), iterations: 100000, hash: 'SHA-256' },
-            keyMaterial,
-            { name: 'AES-GCM', length: 256 },
-            false,
-            ['encrypt', 'decrypt']
-        );
-    }
+    // ============================
+    // 3. ТЕМЫ
+    // ============================
+    const themes = ['dark', 'light', 'yellow'];
+    let themeIndex = parseInt(localStorage.getItem('themeIndex')) || 0;
+    document.body.className = themes[themeIndex] === 'dark' ? '' : themes[themeIndex];
+    document.getElementById('themeBtn').onclick = () => {
+        themeIndex = (themeIndex + 1) % themes.length;
+        document.body.className = themes[themeIndex] === 'dark' ? '' : themes[themeIndex];
+        localStorage.setItem('themeIndex', themeIndex);
+    };
 
-    let encryptionKey = null;
-    deriveKey(myId).then(key => { encryptionKey = key; });
+    // ============================
+    // 4. ПОКАЗАТЬ ID
+    // ============================
+    document.getElementById('myIdBtn').onclick = () => {
+        alert('🔑 Твой ID: ' + myId);
+    };
 
-    async function encryptMessage(text) {
-        if (!encryptionKey) {
-            await new Promise(r => setTimeout(r, 300));
-            return await encryptMessage(text);
-        }
-        const encoder = new TextEncoder();
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const encrypted = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: iv },
-            encryptionKey,
-            encoder.encode(text)
-        );
-        const combined = new Uint8Array(iv.length + encrypted.byteLength);
-        combined.set(iv, 0);
-        combined.set(new Uint8Array(encrypted), iv.length);
-        return btoa(String.fromCharCode(...combined));
-    }
-
-    async function decryptMessage(combinedBase64) {
-        if (!encryptionKey) {
-            await new Promise(r => setTimeout(r, 300));
-            return await decryptMessage(combinedBase64);
-        }
-        const combined = Uint8Array.from(atob(combinedBase64), c => c.charCodeAt(0));
-        const iv = combined.slice(0, 12);
-        const encrypted = combined.slice(12);
-        const decrypted = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: iv },
-            encryptionKey,
-            encrypted
-        );
-        return new TextDecoder().decode(decrypted);
-    }
-
-    // ============================================
-    // 4. ЧАТ (шифрование/дешифрование)
-    // ============================================
+    // ============================
+    // 5. ЧАТ (текст)
+    // ============================
     const messagesDiv = document.getElementById('messages');
     const msgInput = document.getElementById('msgInput');
     const sendBtn = document.getElementById('sendBtn');
 
-    // Слушаем новые сообщения
+    // Загружаем сообщения
     const chatRef = db.ref('chats/' + myUid);
-    chatRef.limitToLast(50).on('child_added', async (snap) => {
+    chatRef.limitToLast(50).on('child_added', snap => {
         const data = snap.val();
-        if (!data || !data.encrypted) return;
-        try {
-            const decrypted = await decryptMessage(data.encrypted);
-            const div = document.createElement('div');
-            div.className = 'msg';
-            if (data.from === myId) div.classList.add('own');
-            div.innerHTML = `
-                <div class="nick">${data.from}</div>
-                <div class="text">${decrypted}</div>
-            `;
-            messagesDiv.appendChild(div);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        } catch (e) {
-            // тихо игнорируем
-        }
-    });
-
-    // Отправка
-    async function sendMessage() {
-        const text = msgInput.value.trim();
-        if (!text || !encryptionKey) return;
-
-        const encrypted = await encryptMessage(text);
-        chatRef.push({
-            from: myId,
-            encrypted: encrypted,
-            timestamp: Date.now()
-        });
-
-        // Оптимистичный вывод
         const div = document.createElement('div');
-        div.className = 'msg own';
+        div.className = 'msg';
+        if (data.from === myId) div.classList.add('own');
         div.innerHTML = `
-            <div class="nick">${myId}</div>
-            <div class="text">${text}</div>
+            <div class="nick">${data.from}</div>
+            <div class="text">${data.text}</div>
         `;
         messagesDiv.appendChild(div);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    // Отправка
+    function sendMessage() {
+        const text = msgInput.value.trim();
+        if (!text) return;
+        chatRef.push({ from: myId, text, timestamp: Date.now() });
         msgInput.value = '';
     }
 
@@ -342,42 +273,6 @@
     msgInput.onkeydown = (e) => {
         if (e.key === 'Enter') sendMessage();
     };
-
-    // ============================================
-    // 5. ТЕМЫ (твои — тёмная/светлая/жёлтая)
-    // ============================================
-    const themes = ['dark', 'light', 'yellow'];
-    let themeIndex = parseInt(localStorage.getItem('chat_theme_index')) || 0;
-    document.body.className = themes[themeIndex] === 'dark' ? '' : themes[themeIndex];
-    document.getElementById('themeBtn').onclick = () => {
-        themeIndex = (themeIndex + 1) % themes.length;
-        document.body.className = themes[themeIndex] === 'dark' ? '' : themes[themeIndex];
-        localStorage.setItem('chat_theme_index', themeIndex);
-    };
-
-    // ============================================
-    // 6. ПОКАЗАТЬ ID
-    // ============================================
-    document.getElementById('myIdBtn').onclick = () => {
-        alert('🔑 Твой ID: ' + myId + '\nДействителен до: ' + new Date().toISOString().slice(0, 10));
-    };
-
-    // ============================================
-    // 7. ПРИВЕТСТВИЕ (системное)
-    // ============================================
-    const sys = document.createElement('div');
-    sys.className = 'msg';
-    sys.style.background = 'transparent';
-    sys.style.borderLeft = '2px solid #4ade80';
-    sys.style.fontSize = '12px';
-    sys.style.color = '#667';
-    sys.innerHTML = `
-        <div class="nick">🔐 Система</div>
-        <div class="text">Твой ID: ${myId}. Меняется каждый день. Все сообщения зашифрованы.</div>
-    `;
-    messagesDiv.appendChild(sys);
-
-    console.log('🔒 Анонимный чат запущен. ID:', myId);
 </script>
 </body>
 </html>
