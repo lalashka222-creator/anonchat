@@ -6,6 +6,7 @@
     <title>💬 Мессенджер</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -26,7 +27,7 @@
         .contact-item .online { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:8px; }
         .contact-item .online.on { background:#00ff88; }
         .contact-item .online.off { background:#555; }
-        .contact-item .avatar { display:inline-block; width:28px; height:28px; border-radius:50%; text-align:center; line-height:28px; font-weight:bold; font-size:14px; margin-right:8px; vertical-align:middle; color:#fff; }
+        .contact-item .avatar { display:inline-block; width:28px; height:28px; border-radius:50%; text-align:center; line-height:28px; font-weight:bold; font-size:14px; margin-right:8px; vertical-align:middle; color:#fff; background:#6d8aff; }
         .contact-item .del { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:2px 10px; font-size:12px; cursor:pointer; }
         #contactsList { flex:1; overflow-y:auto; }
         #main { flex:1; display:flex; flex-direction:column; background:var(--bg); padding:16px; min-width:0; }
@@ -34,15 +35,17 @@
         #main .top button { background:transparent; border:none; color:var(--text); font-size:22px; cursor:pointer; padding:4px 8px; }
         #main .top h3 { flex:1; font-weight:400; font-size:18px; }
         #messages { flex:1; overflow-y:auto; background:var(--bg); border-radius:16px; padding:12px; margin-bottom:10px; display:flex; flex-direction:column; gap:4px; border:1px solid var(--border); }
-        .msg { background:var(--card); padding:8px 14px; border-radius:16px; border-left:3px solid var(--accent); max-width:90%; word-break:break-word; cursor:pointer; }
+        .msg { background:var(--card); padding:8px 14px; border-radius:16px; border-left:3px solid var(--accent); max-width:90%; word-break:break-word; cursor:pointer; display:flex; align-items:flex-start; gap:10px; }
+        .msg .avatar { width:30px; height:30px; border-radius:50%; object-fit:cover; flex-shrink:0; background:#2a2f45; }
+        .msg .content { flex:1; }
         .msg.own { border-left-color:#00cc88; align-self:flex-end; }
         .msg .nick { font-size:12px; font-weight:600; color:#9bb1ff; display:flex; align-items:center; gap:6px; }
-        .msg .nick .avatar { display:inline-block; width:22px; height:22px; border-radius:50%; text-align:center; line-height:22px; font-weight:bold; font-size:11px; color:#fff; flex-shrink:0; }
         .msg .ai-label { color:#00ff88; font-weight:600; }
         .msg .reactions { display:flex; gap:6px; margin-top:4px; flex-wrap:wrap; }
         .msg .reactions span { cursor:pointer; padding:0 6px; border-radius:12px; background:var(--bg); font-size:14px; }
         .msg .del-btn { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:0 10px; font-size:11px; cursor:pointer; margin-left:8px; }
         .msg .time { font-size:10px; color:#667; margin-top:2px; }
+        .msg .google-btn { display:inline-block; margin-top:6px; padding:4px 12px; background:#6d8aff; color:#fff; border-radius:30px; text-decoration:none; font-size:12px; }
         .input-area { display:flex; align-items:center; gap:8px; background:var(--surface); padding:6px 12px; border-radius:40px; border:1px solid var(--border); }
         .input-area input { flex:1; background:transparent; border:none; color:var(--text); padding:12px 0; font-size:16px; outline:none; min-width:0; }
         .input-area button { background:transparent; border:none; color:var(--text); font-size:22px; cursor:pointer; padding:4px 8px; }
@@ -59,6 +62,14 @@
         .group-item { padding:10px; border-radius:12px; cursor:pointer; margin-bottom:4px; border-left:3px solid #ffd700; display:flex; justify-content:space-between; align-items:center; }
         .group-item:hover { background:var(--card); }
         .group-item .adm-btn { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:2px 10px; font-size:11px; cursor:pointer; }
+        .profile-modal { display:none; position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);justify-content:center;align-items:center;z-index:999; }
+        .profile-modal.active { display:flex; }
+        .profile-card { background:var(--surface); padding:30px; border-radius:30px; border:1px solid var(--border); text-align:center; max-width:300px; width:100%; }
+        .profile-card .avatar-big { width:100px; height:100px; border-radius:50%; object-fit:cover; background:#2a2f45; cursor:pointer; margin:0 auto 12px; display:block; border:2px solid var(--accent); }
+        .profile-card .id-box { font-size:18px; font-family:monospace; background:var(--bg); padding:8px 16px; border-radius:40px; display:inline-block; margin:8px 0; }
+        .profile-card .copy-btn { background:var(--accent); border:none; color:#fff; padding:6px 16px; border-radius:30px; cursor:pointer; }
+        .profile-card .close-btn { background:#ff6b6b; border:none; color:#fff; padding:8px 24px; border-radius:30px; cursor:pointer; margin-top:12px; }
+        .file-input { display:none; }
         @media (max-width:600px) { #sidebar { width:220px; } }
     </style>
 </head>
@@ -91,7 +102,7 @@
         <button id="toggleSidebar">☰</button>
         <h3 id="chatLabel">💬 Выберите чат</h3>
         <button id="themeBtn" class="theme-btn">🎨</button>
-        <button id="myIdBtn" class="id-btn">👤</button>
+        <button id="profileBtn" class="id-btn">👤</button>
         <span id="unreadBadge" class="hidden" style="background:#ff6b6b; padding:2px 10px; border-radius:40px; font-size:12px;">🔔</span>
     </div>
     <div id="idPopup" class="id-popup hidden">
@@ -108,6 +119,21 @@
         <button id="sendBtn" class="send">➤</button>
     </div>
 </div>
+
+<!-- ПРОФИЛЬ МОДАЛКА -->
+<div class="profile-modal" id="profileModal">
+    <div class="profile-card">
+        <img class="avatar-big" id="profileAvatar" src="" alt="avatar">
+        <div>
+            <div class="id-box" id="profileId">—</div>
+            <button class="copy-btn" id="copyIdBtn">📋 Копировать ID</button>
+        </div>
+        <button class="close-btn" id="closeProfileBtn">Закрыть</button>
+    </div>
+</div>
+
+<!-- СКРЫТЫЙ ИНПУТ ДЛЯ АВАТАРА -->
+<input type="file" id="fileInput" class="file-input" accept="image/*">
 
 <script>
     // ============================================================
@@ -143,9 +169,10 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const storage = firebase.storage();
 
     // ============================================================
-    // 3. ID ГЕНЕРИРУЕТСЯ ЗАНОВО ПРИ КАЖДОМ ВИЗИТЕ
+    // 3. ID (НОВЫЙ ПРИ КАЖДОМ ВИЗИТЕ)
     // ============================================================
     function genId() {
         let r='';
@@ -171,7 +198,7 @@
         for (let i=0; i<name.length; i++) hash = (hash + name.charCodeAt(i)*31) % colors.length;
         return colors[hash];
     }
-    function getAvatar(name) {
+    function getAvatarHtml(name) {
         const letter = name.charAt(0).toUpperCase();
         const color = getAvatarColor(name);
         return `<span class="avatar" style="background:${color}">${letter}</span>`;
@@ -197,14 +224,18 @@
     const closeSidebarBtn = document.getElementById('closeSidebarBtn');
     const sidebar = document.getElementById('sidebar');
     const createGroupBtn = document.getElementById('createGroupBtn');
-    const myIdBtn = document.getElementById('myIdBtn');
-    const idPopup = document.getElementById('idPopup');
-    const closeIdPopup = document.getElementById('closeIdPopup');
+    const themeBtn = document.getElementById('themeBtn');
+    const profileBtn = document.getElementById('profileBtn');
+    const profileModal = document.getElementById('profileModal');
+    const closeProfileBtn = document.getElementById('closeProfileBtn');
+    const profileId = document.getElementById('profileId');
+    const profileAvatar = document.getElementById('profileAvatar');
+    const copyIdBtn = document.getElementById('copyIdBtn');
+    const fileInput = document.getElementById('fileInput');
     const myIdDisplay = document.getElementById('myIdDisplay');
     const myNickDisplay = document.getElementById('myNickDisplay');
     const setIdInput = document.getElementById('setIdInput');
     const setIdBtn = document.getElementById('setIdBtn');
-    const themeBtn = document.getElementById('themeBtn');
 
     let currentChatId = null;
     let chatType = 'contact';
@@ -213,15 +244,66 @@
     let onlineUsers = {};
     let unreadCount = 0;
     let nick = prompt('Введите ваш ник:') || 'anon';
-    let lastSendTime = 0;
+    let currentListener = null;
 
     myIdDisplay.textContent = myId;
     myNickDisplay.textContent = nick;
-    myIdBtn.onclick = () => idPopup.classList.toggle('hidden');
-    closeIdPopup.onclick = () => idPopup.classList.add('hidden');
+    profileId.textContent = myId;
 
     // ============================================================
-    // 7. ТЕМЫ
+    // 7. ЗАГРУЗКА АВАТАРА В ПРОФИЛЬ
+    // ============================================================
+    function loadAvatar(uid, imgElement) {
+        const avatarRef = storage.ref('avatars/' + uid + '.jpg');
+        avatarRef.getDownloadURL().then(url => {
+            if (imgElement) imgElement.src = url;
+        }).catch(() => {
+            if (imgElement) imgElement.src = '';
+        });
+    }
+
+    function uploadAvatar(file) {
+        const avatarRef = storage.ref('avatars/' + myUid + '.jpg');
+        avatarRef.put(file).then(() => {
+            loadAvatar(myUid, profileAvatar);
+            alert('✅ Аватар обновлён!');
+        }).catch(err => {
+            alert('❌ Ошибка: ' + err.message);
+        });
+    }
+
+    profileAvatar.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) uploadAvatar(file);
+        fileInput.value = '';
+    };
+
+    // ============================================================
+    // 8. ОТКРЫТИЕ ПРОФИЛЯ
+    // ============================================================
+    profileBtn.onclick = () => {
+        profileId.textContent = myId;
+        loadAvatar(myUid, profileAvatar);
+        profileModal.classList.add('active');
+    };
+    closeProfileBtn.onclick = () => profileModal.classList.remove('active');
+    profileModal.onclick = (e) => { if (e.target === profileModal) profileModal.classList.remove('active'); };
+    copyIdBtn.onclick = () => {
+        navigator.clipboard.writeText(myId).then(() => {
+            alert('✅ ID скопирован!');
+        }).catch(() => {
+            const range = document.createRange();
+            range.selectNode(profileId);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            alert('✅ ID скопирован!');
+        });
+    };
+
+    // ============================================================
+    // 9. ТЕМЫ
     // ============================================================
     const themeNames = ['theme-black', 'theme-white', 'theme-yellow', 'theme-red', 'theme-blue'];
     let themeIndex = parseInt(localStorage.getItem('theme_index')) || 0;
@@ -235,7 +317,7 @@
     };
 
     // ============================================================
-    // 8. ВХОД ПО ID
+    // 10. ВХОД ПО ID
     // ============================================================
     setIdBtn.onclick = () => {
         let newId = setIdInput.value.trim().toUpperCase();
@@ -249,7 +331,7 @@
     addFriendInput.oninput = function() { this.value = this.value.toUpperCase(); };
 
     // ============================================================
-    // 9. ОНЛАЙН
+    // 11. ОНЛАЙН
     // ============================================================
     const onlineRef = db.ref('online/' + myUid);
     onlineRef.set({ online: true, lastSeen: Date.now() });
@@ -264,7 +346,7 @@
     }
 
     // ============================================================
-    // 10. ПЕЧАТАЕТ
+    // 12. ПЕЧАТАЕТ
     // ============================================================
     msgInput.onkeydown = () => {
         if(!currentChatId) return;
@@ -287,7 +369,7 @@
     }
 
     // ============================================================
-    // 11. КОНТАКТЫ
+    // 13. КОНТАКТЫ
     // ============================================================
     function loadContacts() {
         db.ref('contacts/' + myUid).once('value', snap => {
@@ -309,7 +391,7 @@
             div.className = 'contact-item';
             div.innerHTML = `
                 <span onclick="openChat('${uid}','contact')">
-                    ${getAvatar(data.nick)} <span class="online ${isOnline?'on':'off'}"></span>
+                    ${getAvatarHtml(data.nick)} <span class="online ${isOnline?'on':'off'}"></span>
                     <strong>${data.nick}</strong> (${data.id})
                 </span>
                 <button class="del" onclick="deleteContact('${uid}')">✕</button>
@@ -346,7 +428,7 @@
     };
 
     // ============================================================
-    // 12. ГРУППЫ + АДМИНКА
+    // 14. ГРУППЫ
     // ============================================================
     function loadGroups() {
         db.ref('groups').once('value', snap => {
@@ -428,9 +510,14 @@
     };
 
     // ============================================================
-    // 13. ОТКРЫТЬ ЧАТ
+    // 15. ОТКРЫТЬ ЧАТ (ОДИН СЛУШАТЕЛЬ)
     // ============================================================
     window.openChat = function(id, type) {
+        if (currentChatId === id && chatType === type) return;
+        if (currentListener) {
+            currentListener.off();
+            currentListener = null;
+        }
         currentChatId = id;
         chatType = type;
         const label = type === 'contact' ? contacts[id]?.nick : groups[id]?.name;
@@ -445,11 +532,12 @@
     };
 
     // ============================================================
-    // 14. СООБЩЕНИЯ
+    // 16. СООБЩЕНИЯ
     // ============================================================
     function loadMessages(chatId, type) {
         const ref = db.ref('chats/' + type + '/' + chatId);
-        ref.limitToLast(50).on('child_added', snap => renderMessage(snap.val(), snap.key));
+        currentListener = ref.limitToLast(50);
+        currentListener.on('child_added', snap => renderMessage(snap.val(), snap.key));
     }
 
     function renderMessage(data) {
@@ -461,12 +549,25 @@
         const sender = data.from === myUid ? 'Вы' : (contacts[data.from]?.nick || groups[data.from]?.members?.[data.from]?.nick || 'anon');
         const senderNick = data.from === myUid ? nick : (contacts[data.from]?.nick || groups[data.from]?.members?.[data.from]?.nick || 'anon');
 
+        // Аватарка
+        let avatarHtml = `<img class="avatar" src="" alt="avatar" id="avatar_${data.msgId}">`;
+        if (data.from === myUid) {
+            loadAvatar(myUid, document.getElementById('avatar_' + data.msgId));
+        } else if (data.from) {
+            loadAvatar(data.from, document.getElementById('avatar_' + data.msgId));
+        }
+
         let content = '';
         if(data.text) {
             const decrypted = dec(data.text);
             content = `<div>${decrypted}</div>`;
         }
-        if(data.ai) content = `<div><span class="ai-label">🤖 ИИ</span>: ${data.ai}</div>`;
+        if(data.ai) {
+            content = `<div><span class="ai-label">🤖 ИИ</span>: ${data.ai}</div>`;
+            if (data.googleLink) {
+                content += `<a href="${data.googleLink}" target="_blank" class="google-btn">🔍 Посмотреть в Google</a>`;
+            }
+        }
 
         const time = new Date(data.timestamp).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
 
@@ -478,15 +579,18 @@
         }
 
         div.innerHTML = `
-            <div class="nick">
-                ${getAvatar(senderNick)} ${sender}
-                ${data.from === myUid ? `<button class="del-btn" onclick="deleteForAll('${data.msgId}')">🗑️</button>` : ''}
+            ${avatarHtml}
+            <div class="content">
+                <div class="nick">
+                    ${sender}
+                    ${data.from === myUid ? `<button class="del-btn" onclick="deleteForAll('${data.msgId}')">🗑️</button>` : ''}
+                </div>
+                ${content}
+                <div class="reactions">
+                    ${reactionsHtml}
+                </div>
+                <div class="time">${time}</div>
             </div>
-            ${content}
-            <div class="reactions">
-                ${reactionsHtml}
-            </div>
-            <div class="time">${time}</div>
         `;
 
         div.ondblclick = () => {
@@ -505,7 +609,7 @@
     }
 
     // ============================================================
-    // 15. РЕАКЦИЯ (только ❤️)
+    // 17. РЕАКЦИЯ (только ❤️)
     // ============================================================
     window.addReaction = function(msgId, emoji) {
         if(emoji !== '❤️') return;
@@ -520,31 +624,53 @@
     };
 
     // ============================================================
-    // 16. ИИ
+    // 18. ИИ (ГОУГЛ)
     // ============================================================
     async function askAI(question) {
+        if (!question) return alert('Напиши вопрос');
+        chatRef.push({ from: myId, text: question, type: 'text' });
         try {
-            const resp = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(question)}&format=json&no_html=1&skip_disambig=1`);
-            const data = await resp.json();
-            let answer = data.AbstractText;
-            if(!answer || answer.length < 5) {
-                answer = '❌ Не нашёл точного ответа. Попробуй переформулировать.';
+            const apiKey = 'AIzaSyD4YKI6T_j8j02tZQl8lZ0d5KJkK9JtYi0';
+            const cx = '017576662512468239146:omuauf_lfve';
+            const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(question)}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.items && data.items.length > 0) {
+                const snippet = data.items[0].snippet;
+                const link = data.items[0].link;
+                chatRef.push({
+                    from: 'ИИ',
+                    ai: snippet,
+                    type: 'ai',
+                    googleLink: link
+                });
+            } else {
+                chatRef.push({
+                    from: 'ИИ',
+                    ai: 'Вот что я нашёл для тебя',
+                    type: 'ai',
+                    googleLink: `https://www.google.com/search?q=${encodeURIComponent(question)}`
+                });
             }
-            sendToFirebase({ ai: answer });
-        } catch {
-            sendToFirebase({ ai: '⚠️ Ошибка подключения, попробуй позже.' });
+        } catch (error) {
+            chatRef.push({
+                from: 'ИИ',
+                ai: 'Ошибка при поиске в Google. Попробуй позже.',
+                type: 'ai',
+                googleLink: `https://www.google.com/search?q=${encodeURIComponent(question)}`
+            });
         }
-        msgInput.value = '';
     }
 
     aiBtn.onclick = () => {
         const q = msgInput.value.trim();
-        if(!q) return alert('Напиши вопрос');
+        if (!q) return alert('Напиши вопрос');
         askAI(q);
+        msgInput.value = '';
     };
 
     // ============================================================
-    // 17. ОТПРАВКА
+    // 19. ОТПРАВКА
     // ============================================================
     function sendToFirebase(data) {
         if(!currentChatId) { alert('Выберите чат'); return; }
@@ -556,12 +682,6 @@
     function sendMessage() {
         const text = msgInput.value.trim();
         if(!text) return;
-        const now = Date.now();
-        if (now - lastSendTime < 3000) {
-            alert('⏳ Подожди 3 секунды');
-            return;
-        }
-        lastSendTime = now;
         if(text.startsWith('/ai ')) {
             const q = text.slice(4);
             askAI(q);
@@ -581,7 +701,7 @@
     };
 
     // ============================================================
-    // 18. ОБНОВЛЕНИЕ
+    // 20. ОБНОВЛЕНИЕ
     // ============================================================
     db.ref('contacts/' + myUid).on('value', loadContacts);
     db.ref('groups').on('value', loadGroups);
@@ -592,7 +712,7 @@
     searchContacts.oninput = renderContacts;
 
     // ============================================================
-    // 19. ЗАПУСК
+    // 21. ЗАПУСК
     // ============================================================
     loadContacts();
     loadGroups();
