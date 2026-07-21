@@ -133,7 +133,23 @@
 
 <script>
     // ============================================================
-    // 1. ЗВУК
+    // 1. ТВОЙ КОНФИГ FIREBASE (ВСТАВЛЕН)
+    // ============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyCPiopo6vRsTyhUnoDpztKNFa84aYzS34s",
+        authDomain: "sanyachats-2493a.firebaseapp.com",
+        databaseURL: "https://sanyachats-2493a-default-rtdb.firebaseio.com",
+        projectId: "sanyachats-2493a",
+        storageBucket: "sanyachats-2493a.firebasestorage.app",
+        messagingSenderId: "191784487633",
+        appId: "1:191784487633:web:f290156eb5279b1273d3f0"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ============================================================
+    // 2. ЗВУК
     // ============================================================
     function playSound() {
         try {
@@ -150,21 +166,6 @@
             osc.stop(ctx.currentTime + 0.1);
         } catch {}
     }
-
-    // ============================================================
-    // 2. FIREBASE
-    // ============================================================
-    const firebaseConfig = {
-        apiKey: "AIzaSyCPiopo6vRsTyhUnoDpztKNFa84aYzS34s",
-        authDomain: "sanyachats-2493a.firebaseapp.com",
-        databaseURL: "https://sanyachats-2493a-default-rtdb.firebaseio.com",
-        projectId: "sanyachats-2493a",
-        storageBucket: "sanyachats-2493a.firebasestorage.app",
-        messagingSenderId: "191784487633",
-        appId: "1:191784487633:web:f290156eb5279b1273d3f0"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
 
     // ============================================================
     // 3. ID (НОВЫЙ ПРИ КАЖДОМ ВИЗИТЕ)
@@ -197,11 +198,6 @@
         const letter = name.charAt(0).toUpperCase();
         const color = getAvatarColor(name);
         return `<span class="avatar" style="background:${color}">${letter}</span>`;
-    }
-    function getAvatarDiv(name, size) {
-        const letter = name.charAt(0).toUpperCase();
-        const color = getAvatarColor(name);
-        return `<div class="avatar-big" style="background:${color}; line-height:${size}px; font-size:${size*0.4}px;">${letter}</div>`;
     }
 
     // ============================================================
