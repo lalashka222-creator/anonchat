@@ -2,176 +2,54 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🔒 Анонимный Чат</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💬 Чат</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        /* ============================
-                   БАЗА
-                ============================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
             background: #0b0d15;
             color: #e0e0e0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 16px;
-            transition: background 0.35s ease, color 0.35s ease;
+            transition: background 0.3s, color 0.3s;
         }
 
-        /* ============================
-                   ТЕМЫ
-                ============================ */
-        /* --- Тёмная (по умолчанию) --- */
-        body.dark .app {
-            background: #12161f;
-            border-color: #1e2538;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
-        }
-        body.dark #messages {
-            background: #0b0d15;
-        }
-        body.dark .msg {
-            background: #1a2030;
-            border-left-color: #6d8aff;
-        }
-        body.dark .msg.own {
-            border-left-color: #00cc88;
-        }
-        body.dark .input-area {
-            background: #0b0d15;
-            border-color: #1e2538;
-        }
-        body.dark .input-area input {
-            color: #e0e0e0;
-        }
-        body.dark .input-area input::placeholder {
-            color: #556;
-        }
-        body.dark .id-btn,
-        body.dark .theme-btn {
-            background: #1a2030;
-            color: #e0e0e0;
-            border-color: #1e2538;
-        }
-        body.dark .id-btn:hover,
-        body.dark .theme-btn:hover {
-            background: #2a2f45;
-        }
-        body.dark .footer {
-            color: #667;
-        }
-
-        /* --- Светлая --- */
+        /* --- ТЕМЫ (твои) --- */
         body.light {
-            background: #eef2f7;
-            color: #1a1a2e;
+            background: #f0f2f5;
+            color: #111;
         }
-        body.light .app {
-            background: #ffffff;
-            border-color: #d0d7e6;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
-        }
-        body.light #messages {
-            background: #f4f6fc;
-        }
-        body.light .msg {
-            background: #e4e9f2;
-            border-left-color: #6d8aff;
-        }
-        body.light .msg.own {
-            border-left-color: #00b87a;
-        }
-        body.light .input-area {
-            background: #f4f6fc;
-            border-color: #d0d7e6;
-        }
-        body.light .input-area input {
-            color: #1a1a2e;
-        }
-        body.light .input-area input::placeholder {
-            color: #8892a8;
-        }
-        body.light .id-btn,
-        body.light .theme-btn {
-            background: #e4e9f2;
-            color: #1a1a2e;
-            border-color: #d0d7e6;
-        }
-        body.light .id-btn:hover,
-        body.light .theme-btn:hover {
-            background: #d0d7e6;
-        }
-        body.light .footer {
-            color: #8892a8;
-        }
+        body.light .app { background: #ffffff; border-color: #d0d0d0; }
+        body.light .msg { background: #e4e6eb; }
+        body.light .input-area { background: #f0f2f5; border-color: #d0d0d0; }
+        body.light .input-area input { color: #111; }
 
-        /* --- Жёлтая --- */
         body.yellow {
-            background: #fcf3d4;
-            color: #2d2410;
+            background: #fef9e0;
+            color: #1e1a0a;
         }
-        body.yellow .app {
-            background: #fff8e7;
-            border-color: #e6d6a0;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
-        }
-        body.yellow #messages {
-            background: #fdf6e0;
-        }
-        body.yellow .msg {
-            background: #f5edc8;
-            border-left-color: #d4b87a;
-        }
-        body.yellow .msg.own {
-            border-left-color: #8cb87a;
-        }
-        body.yellow .input-area {
-            background: #fdf6e0;
-            border-color: #e6d6a0;
-        }
-        body.yellow .input-area input {
-            color: #2d2410;
-        }
-        body.yellow .input-area input::placeholder {
-            color: #a08a5a;
-        }
-        body.yellow .id-btn,
-        body.yellow .theme-btn {
-            background: #f5edc8;
-            color: #2d2410;
-            border-color: #e6d6a0;
-        }
-        body.yellow .id-btn:hover,
-        body.yellow .theme-btn:hover {
-            background: #e6d6a0;
-        }
-        body.yellow .footer {
-            color: #a08a5a;
-        }
+        body.yellow .app { background: #fffbe6; border-color: #e6d8a0; }
+        body.yellow .msg { background: #f5edc0; }
+        body.yellow .input-area { background: #f5edc0; border-color: #e6d8a0; }
+        body.yellow .input-area input { color: #1e1a0a; }
 
-        /* ============================
-                   ПРИЛОЖЕНИЕ
-                ============================ */
         .app {
-            max-width: 520px;
+            max-width: 500px;
             width: 100%;
-            padding: 24px 22px 20px;
+            background: #12161f;
+            padding: 24px 20px 20px;
             border-radius: 32px;
-            border: 1px solid;
-            transition: background 0.35s ease, border 0.35s ease, box-shadow 0.35s ease;
+            border: 1px solid #1e2538;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            transition: background 0.3s, border 0.3s;
         }
 
-        /* --- ШАПКА --- */
         .header {
             display: flex;
             justify-content: space-between;
@@ -180,287 +58,147 @@
         }
         .header h2 {
             font-size: 22px;
-            font-weight: 700;
+            font-weight: 600;
             background: linear-gradient(135deg, #6d8aff, #b47aff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -0.3px;
         }
-        .header-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .id-btn,
         .theme-btn {
+            background: #1a2030;
+            border: none;
+            color: #e0e0e0;
+            font-size: 20px;
             padding: 6px 14px;
             border-radius: 40px;
-            font-size: 13px;
-            font-weight: 500;
-            border: 1px solid;
             cursor: pointer;
-            transition: 0.25s ease;
-            background: transparent;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            transition: 0.2s;
         }
-        .id-btn:hover,
-        .theme-btn:hover {
-            transform: scale(0.95);
-        }
+        .theme-btn:hover { background: #2a2f45; }
 
-        /* --- ПОЛЕ СООБЩЕНИЙ --- */
         #messages {
-            height: 360px;
+            height: 340px;
             overflow-y: auto;
-            padding: 14px 12px;
+            background: #0b0d15;
+            padding: 14px;
             border-radius: 20px;
             margin-bottom: 14px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            transition: background 0.35s ease;
-            scroll-behavior: smooth;
+            gap: 6px;
+            transition: background 0.3s;
         }
-        #messages::-webkit-scrollbar {
-            width: 4px;
-        }
-        #messages::-webkit-scrollbar-thumb {
-            background: #6d8aff;
-            border-radius: 10px;
-        }
-        #messages::-webkit-scrollbar-track {
-            background: transparent;
-        }
+        body.light #messages { background: #f0f2f5; }
+        body.yellow #messages { background: #fef9e0; }
 
-        /* --- СООБЩЕНИЯ (пузыри) --- */
         .msg {
+            background: #1a2030;
             padding: 10px 16px;
             border-radius: 18px;
-            max-width: 86%;
+            max-width: 85%;
             word-break: break-word;
-            border-left: 4px solid;
-            transition: background 0.3s, border 0.3s;
-            animation: fadeSlide 0.25s ease-out;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+            border-left: 3px solid #6d8aff;
+            transition: background 0.3s;
         }
         .msg .nick {
             font-size: 12px;
             font-weight: 600;
             color: #9bb1ff;
             margin-bottom: 2px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .msg .nick .time {
-            font-weight: 400;
-            color: #8892a8;
-            font-size: 10px;
-        }
-        body.light .msg .nick .time {
-            color: #6a7a92;
-        }
-        body.yellow .msg .nick .time {
-            color: #8a7a5a;
         }
         .msg .text {
             font-size: 15px;
-            line-height: 1.45;
+            line-height: 1.4;
         }
         .msg.own {
             align-self: flex-end;
             border-left-color: #00cc88;
         }
-        .msg.own .nick {
-            color: #00cc88;
-        }
+        .msg.own .nick { color: #00cc88; }
 
-        /* --- СИСТЕМНОЕ СООБЩЕНИЕ --- */
-        .msg.system {
-            align-self: center;
-            max-width: 92%;
-            border-left-color: transparent !important;
-            background: transparent !important;
-            font-size: 12px;
-            color: #8892a8;
-            text-align: center;
-            padding: 6px 12px;
-            border: 1px dashed #3a4055;
-            border-radius: 40px;
-        }
-        body.light .msg.system {
-            border-color: #c0c8d8;
-            color: #6a7a92;
-        }
-        body.yellow .msg.system {
-            border-color: #d4c8a0;
-            color: #8a7a5a;
-        }
-
-        /* --- ВВОД --- */
         .input-area {
             display: flex;
             gap: 10px;
-            padding: 4px 4px 4px 20px;
+            background: #0b0d15;
+            padding: 6px 6px 6px 18px;
             border-radius: 40px;
-            border: 1px solid;
-            transition: background 0.35s ease, border 0.35s ease;
+            border: 1px solid #1e2538;
+            transition: background 0.3s, border 0.3s;
         }
         .input-area input {
             flex: 1;
             background: transparent;
             border: none;
+            color: #e0e0e0;
             font-size: 15px;
             padding: 12px 0;
             outline: none;
             min-width: 0;
-            transition: color 0.35s ease;
         }
-        .input-area input::placeholder {
-            transition: color 0.35s ease;
-        }
+        .input-area input::placeholder { color: #667; }
         .input-area button {
             background: #6d8aff;
             border: none;
-            padding: 12px 24px;
+            padding: 12px 22px;
             border-radius: 40px;
             font-weight: 600;
             color: #fff;
             font-size: 15px;
             cursor: pointer;
-            transition: 0.2s ease;
-            white-space: nowrap;
+            transition: 0.2s;
         }
-        .input-area button:hover {
-            background: #5a73e0;
-            transform: scale(0.96);
-        }
+        .input-area button:hover { background: #5a73e0; }
 
-        /* --- ПОДВАЛ --- */
+        .id-btn {
+            background: #1a2030;
+            border: 1px solid #1e2538;
+            color: #e0e0e0;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .id-btn:hover { background: #2a2f45; }
         .footer {
             font-size: 12px;
+            color: #667;
             text-align: center;
             margin-top: 16px;
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-            transition: color 0.35s ease;
-        }
-        .footer .encrypted {
-            font-weight: 500;
-            color: #4ade80;
-        }
-        body.light .footer .encrypted {
-            color: #2b8a5a;
-        }
-        body.yellow .footer .encrypted {
-            color: #8a8a3a;
         }
 
-        /* --- АНИМАЦИИ --- */
-        @keyframes fadeSlide {
-            0% {
-                opacity: 0;
-                transform: translateY(12px) scale(0.96);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        /* --- АДАПТИВ --- */
-        @media (max-width: 520px) {
-            .app {
-                padding: 16px 14px;
-                border-radius: 24px;
-            }
-            #messages {
-                height: 280px;
-                padding: 10px 8px;
-            }
-            .input-area {
-                padding: 4px 4px 4px 14px;
-            }
-            .input-area input {
-                font-size: 14px;
-                padding: 10px 0;
-            }
-            .input-area button {
-                padding: 10px 16px;
-                font-size: 14px;
-            }
-            .header h2 {
-                font-size: 18px;
-            }
-            .id-btn,
-            .theme-btn {
-                font-size: 12px;
-                padding: 4px 10px;
-            }
-        }
-        @media (max-width: 380px) {
-            .app {
-                padding: 10px;
-                border-radius: 18px;
-            }
-            #messages {
-                height: 220px;
-            }
-            .msg {
-                padding: 8px 12px;
-                font-size: 13px;
-            }
-            .input-area input {
-                font-size: 13px;
-            }
-            .input-area button {
-                padding: 8px 12px;
-                font-size: 13px;
-            }
-            .footer {
-                font-size: 10px;
-                flex-direction: column;
-                gap: 4px;
-            }
+        @media (max-width: 500px) {
+            .app { padding: 16px; }
+            #messages { height: 260px; }
+            .input-area input { font-size: 14px; }
+            .input-area button { padding: 10px 16px; font-size: 14px; }
         }
     </style>
 </head>
-<body class="dark">
+<body>
 
 <div class="app" id="app">
-    <!-- ШАПКА -->
     <div class="header">
-        <h2>🔒 Чат</h2>
-        <div class="header-actions">
+        <h2>💬 Чат</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
             <button class="id-btn" id="myIdBtn">👤 ID</button>
             <button class="theme-btn" id="themeBtn">🎨</button>
         </div>
     </div>
 
-    <!-- СООБЩЕНИЯ -->
     <div id="messages"></div>
 
-    <!-- ВВОД -->
     <div class="input-area">
         <input id="msgInput" placeholder="Сообщение..." autofocus>
         <button id="sendBtn">➤</button>
     </div>
 
-    <!-- ПОДВАЛ -->
-    <div class="footer">
-        <span class="encrypted">🔐 Сквозное шифрование</span>
-        <span>ID обновляется ежедневно</span>
-    </div>
+    <div class="footer">🔒 Данные шифруются. Только ты и твой собеседник.</div>
 </div>
 
 <script>
-    // ============================
-    // 1. FIREBASE (твой конфиг)
-    // ============================
+    // ============================================
+    // 1. FIREBASE (твой конфиг — без изменений)
+    // ============================================
     const firebaseConfig = {
         apiKey: "AIzaSyCPiopo6vRsTyhUnoDpztKNFa84aYzS34s",
         authDomain: "sanyachats-2493a.firebaseapp.com",
@@ -473,9 +211,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ============================
-    // 2. ЕЖЕДНЕВНЫЙ ID (анонимность)
-    // ============================
+    // ============================================
+    // 2. ЕЖЕДНЕВНАЯ СМЕНА ID (анонимность)
+    // ============================================
     function getDailyId() {
         const today = new Date().toISOString().slice(0, 10);
         const stored = localStorage.getItem('anon_daily_id');
@@ -490,9 +228,9 @@
     const myId = getDailyId();
     const myUid = 'anon_' + myId;
 
-    // ============================
-    // 3. КРИПТОГРАФИЯ (AES-GCM)
-    // ============================
+    // ============================================
+    // 3. КРИПТОГРАФИЯ (AES-GCM) — E2EE
+    // ============================================
     async function deriveKey(id) {
         const encoder = new TextEncoder();
         const keyMaterial = await crypto.subtle.importKey(
@@ -548,73 +286,55 @@
         return new TextDecoder().decode(decrypted);
     }
 
-    // ============================
-    // 4. ЧАТ
-    // ============================
+    // ============================================
+    // 4. ЧАТ (шифрование/дешифрование)
+    // ============================================
     const messagesDiv = document.getElementById('messages');
     const msgInput = document.getElementById('msgInput');
     const sendBtn = document.getElementById('sendBtn');
 
-    // Добавление сообщения в DOM
-    function appendMessage(text, from, time, isOwn = false, isSystem = false) {
-        const div = document.createElement('div');
-        div.className = 'msg';
-        if (isSystem) {
-            div.classList.add('system');
-        } else if (isOwn) {
-            div.classList.add('own');
-        }
-
-        if (!isSystem) {
-            const nick = document.createElement('div');
-            nick.className = 'nick';
-            nick.innerHTML = `${from} ${time ? `<span class="time">${time}</span>` : ''}`;
-            div.appendChild(nick);
-
-            const txt = document.createElement('div');
-            txt.className = 'text';
-            txt.textContent = text;
-            div.appendChild(txt);
-        } else {
-            div.textContent = text;
-        }
-
-        messagesDiv.appendChild(div);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    // Слушаем новые сообщения (расшифровываем)
+    // Слушаем новые сообщения
     const chatRef = db.ref('chats/' + myUid);
     chatRef.limitToLast(50).on('child_added', async (snap) => {
         const data = snap.val();
         if (!data || !data.encrypted) return;
         try {
             const decrypted = await decryptMessage(data.encrypted);
-            const isOwn = (data.from === myId);
-            appendMessage(decrypted, data.from, data.ts || '', isOwn, false);
+            const div = document.createElement('div');
+            div.className = 'msg';
+            if (data.from === myId) div.classList.add('own');
+            div.innerHTML = `
+                <div class="nick">${data.from}</div>
+                <div class="text">${decrypted}</div>
+            `;
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         } catch (e) {
-            // если не расшифровалось — игнорируем
+            // тихо игнорируем
         }
     });
 
-    // Отправка сообщения (шифрование)
+    // Отправка
     async function sendMessage() {
         const text = msgInput.value.trim();
         if (!text || !encryptionKey) return;
 
         const encrypted = await encryptMessage(text);
-        const now = new Date();
-        const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
-                        now.getMinutes().toString().padStart(2, '0');
-
         chatRef.push({
             from: myId,
             encrypted: encrypted,
-            ts: timeStr
+            timestamp: Date.now()
         });
 
-        // Оптимистичный вывод (сразу показываем)
-        appendMessage(text, myId, timeStr, true, false);
+        // Оптимистичный вывод
+        const div = document.createElement('div');
+        div.className = 'msg own';
+        div.innerHTML = `
+            <div class="nick">${myId}</div>
+            <div class="text">${text}</div>
+        `;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
         msgInput.value = '';
     }
 
@@ -623,44 +343,41 @@
         if (e.key === 'Enter') sendMessage();
     };
 
-    // ============================
-    // 5. СИСТЕМНОЕ ПРИВЕТСТВИЕ
-    // ============================
-    appendMessage(
-        `🔐 Твой ID: ${myId}. Меняется каждый день. Все сообщения зашифрованы.`,
-        '',
-        '',
-        false,
-        true
-    );
+    // ============================================
+    // 5. ТЕМЫ (твои — тёмная/светлая/жёлтая)
+    // ============================================
+    const themes = ['dark', 'light', 'yellow'];
+    let themeIndex = parseInt(localStorage.getItem('chat_theme_index')) || 0;
+    document.body.className = themes[themeIndex] === 'dark' ? '' : themes[themeIndex];
+    document.getElementById('themeBtn').onclick = () => {
+        themeIndex = (themeIndex + 1) % themes.length;
+        document.body.className = themes[themeIndex] === 'dark' ? '' : themes[themeIndex];
+        localStorage.setItem('chat_theme_index', themeIndex);
+    };
 
-    // ============================
-    // 6. ID КНОПКА
-    // ============================
+    // ============================================
+    // 6. ПОКАЗАТЬ ID
+    // ============================================
     document.getElementById('myIdBtn').onclick = () => {
         alert('🔑 Твой ID: ' + myId + '\nДействителен до: ' + new Date().toISOString().slice(0, 10));
     };
 
-    // ============================
-    // 7. ТЕМЫ (3 штуки)
-    // ============================
-    const themes = ['dark', 'light', 'yellow'];
-    let themeIndex = parseInt(localStorage.getItem('chat_theme_index')) || 0;
-    document.body.className = themes[themeIndex];
-    document.getElementById('themeBtn').onclick = () => {
-        themeIndex = (themeIndex + 1) % themes.length;
-        document.body.className = themes[themeIndex];
-        localStorage.setItem('chat_theme_index', themeIndex);
-    };
+    // ============================================
+    // 7. ПРИВЕТСТВИЕ (системное)
+    // ============================================
+    const sys = document.createElement('div');
+    sys.className = 'msg';
+    sys.style.background = 'transparent';
+    sys.style.borderLeft = '2px solid #4ade80';
+    sys.style.fontSize = '12px';
+    sys.style.color = '#667';
+    sys.innerHTML = `
+        <div class="nick">🔐 Система</div>
+        <div class="text">Твой ID: ${myId}. Меняется каждый день. Все сообщения зашифрованы.</div>
+    `;
+    messagesDiv.appendChild(sys);
 
-    // ============================
-    // 8. КОНСОЛЬНАЯ ИНФА
-    // ============================
-    console.log('🔒 Анонимный чат запущен');
-    console.log('🆔 ID:', myId);
-    console.log('📅 Действителен до:', new Date().toISOString().slice(0, 10));
-    console.log('🔐 E2EE активно');
+    console.log('🔒 Анонимный чат запущен. ID:', myId);
 </script>
-
 </body>
 </html>
