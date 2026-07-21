@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>💬 Мессенджер</title>
+    <title>💬 Мессенджер 1000</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
@@ -27,7 +27,7 @@
         .contact-item .online { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:8px; }
         .contact-item .online.on { background:#00ff88; }
         .contact-item .online.off { background:#555; }
-        .contact-item .avatar { display:inline-block; width:28px; height:28px; border-radius:50%; text-align:center; line-height:28px; font-weight:bold; font-size:14px; margin-right:8px; vertical-align:middle; color:#fff; background:#6d8aff; }
+        .contact-item .avatar { display:inline-block; width:28px; height:28px; border-radius:50%; text-align:center; line-height:28px; font-weight:bold; font-size:14px; margin-right:8px; vertical-align:middle; color:#fff; }
         .contact-item .del { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:2px 10px; font-size:12px; cursor:pointer; }
         #contactsList { flex:1; overflow-y:auto; }
         #main { flex:1; display:flex; flex-direction:column; background:var(--bg); padding:16px; min-width:0; }
@@ -132,7 +132,6 @@
     </div>
 </div>
 
-<!-- СКРЫТЫЙ ИНПУТ ДЛЯ АВАТАРА -->
 <input type="file" id="fileInput" class="file-input" accept="image/*">
 
 <script>
@@ -628,7 +627,8 @@
     // ============================================================
     async function askAI(question) {
         if (!question) return alert('Напиши вопрос');
-        chatRef.push({ from: myId, text: question, type: 'text' });
+        // Показываем вопрос пользователя
+        sendToFirebase({ text: enc(question) });
         try {
             const apiKey = 'AIzaSyD4YKI6T_j8j02tZQl8lZ0d5KJkK9JtYi0';
             const cx = '017576662512468239146:omuauf_lfve';
@@ -638,27 +638,12 @@
             if (data.items && data.items.length > 0) {
                 const snippet = data.items[0].snippet;
                 const link = data.items[0].link;
-                chatRef.push({
-                    from: 'ИИ',
-                    ai: snippet,
-                    type: 'ai',
-                    googleLink: link
-                });
+                sendToFirebase({ ai: snippet, googleLink: link });
             } else {
-                chatRef.push({
-                    from: 'ИИ',
-                    ai: 'Вот что я нашёл для тебя',
-                    type: 'ai',
-                    googleLink: `https://www.google.com/search?q=${encodeURIComponent(question)}`
-                });
+                sendToFirebase({ ai: 'Вот что я нашёл для тебя', googleLink: `https://www.google.com/search?q=${encodeURIComponent(question)}` });
             }
         } catch (error) {
-            chatRef.push({
-                from: 'ИИ',
-                ai: 'Ошибка при поиске в Google. Попробуй позже.',
-                type: 'ai',
-                googleLink: `https://www.google.com/search?q=${encodeURIComponent(question)}`
-            });
+            sendToFirebase({ ai: 'Ошибка при поиске в Google. Попробуй позже.', googleLink: `https://www.google.com/search?q=${encodeURIComponent(question)}` });
         }
     }
 
