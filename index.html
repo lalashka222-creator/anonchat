@@ -16,7 +16,6 @@
         .theme-red { --bg: #1a0505; --surface: #2a0a0a; --border: #5a1a1a; --text: #f0c0c0; --accent: #ff4444; --card: #3a1010; }
         .theme-blue { --bg: #050a1a; --surface: #0a1a2a; --border: #1a3a5a; --text: #c0d0f0; --accent: #4488ff; --card: #10203a; }
         body { background: var(--bg); color: var(--text); }
-
         #sidebar { width:280px; background:var(--surface); border-right:1px solid var(--border); padding:16px; display:flex; flex-direction:column; transition:0.3s; overflow:hidden; flex-shrink:0; }
         #sidebar.hidden { width:0; padding:0; border:none; }
         #sidebar .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
@@ -112,21 +111,7 @@
 
 <script>
     // ============================================================
-    // 1. ПАРОЛЬ ПРИ ВХОДЕ
-    // ============================================================
-    const APP_PASSWORD = "1234";
-    if (!localStorage.getItem('app_unlocked')) {
-        const pwd = prompt('🔐 Введите пароль для входа:');
-        if (pwd !== APP_PASSWORD) {
-            alert('❌ Неверный пароль. Страница обновится.');
-            location.reload();
-        } else {
-            localStorage.setItem('app_unlocked', 'true');
-        }
-    }
-
-    // ============================================================
-    // 2. ЗВУК
+    // 1. ЗВУК
     // ============================================================
     function playSound() {
         try {
@@ -145,7 +130,7 @@
     }
 
     // ============================================================
-    // 3. КОНФИГ FIREBASE
+    // 2. FIREBASE
     // ============================================================
     const firebaseConfig = {
         apiKey: "AIzaSyCPiopo6vRsTyhUnoDpztKNFa84aYzS34s",
@@ -160,27 +145,25 @@
     const db = firebase.database();
 
     // ============================================================
-    // 4. ID
+    // 3. ID ГЕНЕРИРУЕТСЯ ЗАНОВО ПРИ КАЖДОМ ВИЗИТЕ
     // ============================================================
     function genId() {
         let r='';
         for(let i=0;i<5;i++) r+='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random()*36)];
         return r;
     }
-    let myId = localStorage.getItem('my_id') || genId();
-    myId = myId.toUpperCase();
-    if(!localStorage.getItem('my_id')) localStorage.setItem('my_id', myId);
+    const myId = genId();
     const myUid = 'anon_' + myId;
 
     // ============================================================
-    // 5. ШИФРОВАНИЕ
+    // 4. ШИФРОВАНИЕ
     // ============================================================
-    let key = localStorage.getItem('chat_key') || 'секрет2026';
+    let key = 'секрет2026';
     function enc(t){ return CryptoJS.AES.encrypt(t,key).toString(); }
     function dec(c){ try{ return CryptoJS.AES.decrypt(c,key).toString(CryptoJS.enc.Utf8); } catch{ return '🔒'; } }
 
     // ============================================================
-    // 6. АВАТАРКИ
+    // 5. АВАТАРКИ
     // ============================================================
     function getAvatarColor(name) {
         const colors = ['#ff6b6b','#ffa94d','#ffd93d','#6bcb77','#4d96ff','#9b59b6','#1abc9c','#e67e22','#2ecc71','#3498db'];
@@ -195,7 +178,7 @@
     }
 
     // ============================================================
-    // 7. DOM
+    // 6. DOM
     // ============================================================
     const messagesDiv = document.getElementById('messages');
     const msgInput = document.getElementById('msgInput');
@@ -229,7 +212,7 @@
     let groups = {};
     let onlineUsers = {};
     let unreadCount = 0;
-    let nick = localStorage.getItem('anon_nick') || 'anon';
+    let nick = prompt('Введите ваш ник:') || 'anon';
     let lastSendTime = 0;
 
     myIdDisplay.textContent = myId;
@@ -238,7 +221,7 @@
     closeIdPopup.onclick = () => idPopup.classList.add('hidden');
 
     // ============================================================
-    // 8. ТЕМЫ
+    // 7. ТЕМЫ
     // ============================================================
     const themeNames = ['theme-black', 'theme-white', 'theme-yellow', 'theme-red', 'theme-blue'];
     let themeIndex = parseInt(localStorage.getItem('theme_index')) || 0;
@@ -252,7 +235,7 @@
     };
 
     // ============================================================
-    // 9. ВХОД ПО ID
+    // 8. ВХОД ПО ID
     // ============================================================
     setIdBtn.onclick = () => {
         let newId = setIdInput.value.trim().toUpperCase();
@@ -266,7 +249,7 @@
     addFriendInput.oninput = function() { this.value = this.value.toUpperCase(); };
 
     // ============================================================
-    // 10. ОНЛАЙН
+    // 9. ОНЛАЙН
     // ============================================================
     const onlineRef = db.ref('online/' + myUid);
     onlineRef.set({ online: true, lastSeen: Date.now() });
@@ -281,7 +264,7 @@
     }
 
     // ============================================================
-    // 11. ПЕЧАТАЕТ
+    // 10. ПЕЧАТАЕТ
     // ============================================================
     msgInput.onkeydown = () => {
         if(!currentChatId) return;
@@ -304,7 +287,7 @@
     }
 
     // ============================================================
-    // 12. КОНТАКТЫ
+    // 11. КОНТАКТЫ
     // ============================================================
     function loadContacts() {
         db.ref('contacts/' + myUid).once('value', snap => {
@@ -363,7 +346,7 @@
     };
 
     // ============================================================
-    // 13. ГРУППЫ + АДМИНКА
+    // 12. ГРУППЫ + АДМИНКА
     // ============================================================
     function loadGroups() {
         db.ref('groups').once('value', snap => {
@@ -445,7 +428,7 @@
     };
 
     // ============================================================
-    // 14. ОТКРЫТЬ ЧАТ
+    // 13. ОТКРЫТЬ ЧАТ
     // ============================================================
     window.openChat = function(id, type) {
         currentChatId = id;
@@ -462,7 +445,7 @@
     };
 
     // ============================================================
-    // 15. СООБЩЕНИЯ
+    // 14. СООБЩЕНИЯ
     // ============================================================
     function loadMessages(chatId, type) {
         const ref = db.ref('chats/' + type + '/' + chatId);
@@ -517,12 +500,12 @@
             unreadCount++;
             unreadBadge.classList.remove('hidden');
             unreadBadge.textContent = '🔔 ' + unreadCount;
-            playSound(); // 🔔 ЗВУК ПРИ ПОЛУЧЕНИИ
+            playSound();
         }
     }
 
     // ============================================================
-    // 16. РЕАКЦИЯ (только ❤️)
+    // 15. РЕАКЦИЯ (только ❤️)
     // ============================================================
     window.addReaction = function(msgId, emoji) {
         if(emoji !== '❤️') return;
@@ -537,7 +520,7 @@
     };
 
     // ============================================================
-    // 17. ИИ
+    // 16. ИИ
     // ============================================================
     async function askAI(question) {
         try {
@@ -561,7 +544,7 @@
     };
 
     // ============================================================
-    // 18. ОТПРАВКА
+    // 17. ОТПРАВКА
     // ============================================================
     function sendToFirebase(data) {
         if(!currentChatId) { alert('Выберите чат'); return; }
@@ -598,7 +581,7 @@
     };
 
     // ============================================================
-    // 19. ОБНОВЛЕНИЕ
+    // 18. ОБНОВЛЕНИЕ
     // ============================================================
     db.ref('contacts/' + myUid).on('value', loadContacts);
     db.ref('groups').on('value', loadGroups);
@@ -609,7 +592,7 @@
     searchContacts.oninput = renderContacts;
 
     // ============================================================
-    // 20. ЗАПУСК
+    // 19. ЗАПУСК
     // ============================================================
     loadContacts();
     loadGroups();
