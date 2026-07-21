@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>💬 Мессенджер 1000</title>
+    <title>💬 Мессенджер</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
@@ -36,7 +36,7 @@
         #main .top h3 { flex:1; font-weight:400; font-size:18px; }
         #messages { flex:1; overflow-y:auto; background:var(--bg); border-radius:16px; padding:12px; margin-bottom:10px; display:flex; flex-direction:column; gap:4px; border:1px solid var(--border); }
         .msg { background:var(--card); padding:8px 14px; border-radius:16px; border-left:3px solid var(--accent); max-width:90%; word-break:break-word; cursor:pointer; display:flex; align-items:flex-start; gap:10px; }
-        .msg .avatar { width:30px; height:30px; border-radius:50%; object-fit:cover; flex-shrink:0; background:#2a2f45; }
+        .msg .avatar { width:30px; height:30px; border-radius:50%; text-align:center; line-height:30px; font-weight:bold; font-size:14px; flex-shrink:0; color:#fff; }
         .msg .content { flex:1; }
         .msg.own { border-left-color:#00cc88; align-self:flex-end; }
         .msg .nick { font-size:12px; font-weight:600; color:#9bb1ff; display:flex; align-items:center; gap:6px; }
@@ -65,11 +65,10 @@
         .profile-modal { display:none; position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);justify-content:center;align-items:center;z-index:999; }
         .profile-modal.active { display:flex; }
         .profile-card { background:var(--surface); padding:30px; border-radius:30px; border:1px solid var(--border); text-align:center; max-width:300px; width:100%; }
-        .profile-card .avatar-big { width:100px; height:100px; border-radius:50%; object-fit:cover; background:#2a2f45; cursor:pointer; margin:0 auto 12px; display:block; border:2px solid var(--accent); }
+        .profile-card .avatar-big { width:100px; height:100px; border-radius:50%; text-align:center; line-height:100px; font-weight:bold; font-size:40px; background:var(--accent); margin:0 auto 12px; display:block; border:2px solid var(--accent); color:#fff; }
         .profile-card .id-box { font-size:18px; font-family:monospace; background:var(--bg); padding:8px 16px; border-radius:40px; display:inline-block; margin:8px 0; }
         .profile-card .copy-btn { background:var(--accent); border:none; color:#fff; padding:6px 16px; border-radius:30px; cursor:pointer; }
         .profile-card .close-btn { background:#ff6b6b; border:none; color:#fff; padding:8px 24px; border-radius:30px; cursor:pointer; margin-top:12px; }
-        .file-input { display:none; }
         @media (max-width:600px) { #sidebar { width:220px; } }
     </style>
 </head>
@@ -123,7 +122,7 @@
 <!-- ПРОФИЛЬ МОДАЛКА -->
 <div class="profile-modal" id="profileModal">
     <div class="profile-card">
-        <img class="avatar-big" id="profileAvatar" src="" alt="avatar">
+        <div class="avatar-big" id="profileAvatar">?</div>
         <div>
             <div class="id-box" id="profileId">—</div>
             <button class="copy-btn" id="copyIdBtn">📋 Копировать ID</button>
@@ -131,8 +130,6 @@
         <button class="close-btn" id="closeProfileBtn">Закрыть</button>
     </div>
 </div>
-
-<input type="file" id="fileInput" class="file-input" accept="image/*">
 
 <script>
     // ============================================================
@@ -168,7 +165,6 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const storage = firebase.storage();
 
     // ============================================================
     // 3. ID (НОВЫЙ ПРИ КАЖДОМ ВИЗИТЕ)
@@ -189,7 +185,7 @@
     function dec(c){ try{ return CryptoJS.AES.decrypt(c,key).toString(CryptoJS.enc.Utf8); } catch{ return '🔒'; } }
 
     // ============================================================
-    // 5. АВАТАРКИ
+    // 5. АВАТАРКИ (БУКВЫ)
     // ============================================================
     function getAvatarColor(name) {
         const colors = ['#ff6b6b','#ffa94d','#ffd93d','#6bcb77','#4d96ff','#9b59b6','#1abc9c','#e67e22','#2ecc71','#3498db'];
@@ -201,6 +197,11 @@
         const letter = name.charAt(0).toUpperCase();
         const color = getAvatarColor(name);
         return `<span class="avatar" style="background:${color}">${letter}</span>`;
+    }
+    function getAvatarDiv(name, size) {
+        const letter = name.charAt(0).toUpperCase();
+        const color = getAvatarColor(name);
+        return `<div class="avatar-big" style="background:${color}; line-height:${size}px; font-size:${size*0.4}px;">${letter}</div>`;
     }
 
     // ============================================================
@@ -230,7 +231,6 @@
     const profileId = document.getElementById('profileId');
     const profileAvatar = document.getElementById('profileAvatar');
     const copyIdBtn = document.getElementById('copyIdBtn');
-    const fileInput = document.getElementById('fileInput');
     const myIdDisplay = document.getElementById('myIdDisplay');
     const myNickDisplay = document.getElementById('myNickDisplay');
     const setIdInput = document.getElementById('setIdInput');
@@ -248,61 +248,11 @@
     myIdDisplay.textContent = myId;
     myNickDisplay.textContent = nick;
     profileId.textContent = myId;
+    profileAvatar.innerHTML = nick.charAt(0).toUpperCase();
+    profileAvatar.style.background = getAvatarColor(nick);
 
     // ============================================================
-    // 7. ЗАГРУЗКА АВАТАРА В ПРОФИЛЬ
-    // ============================================================
-    function loadAvatar(uid, imgElement) {
-        const avatarRef = storage.ref('avatars/' + uid + '.jpg');
-        avatarRef.getDownloadURL().then(url => {
-            if (imgElement) imgElement.src = url;
-        }).catch(() => {
-            if (imgElement) imgElement.src = '';
-        });
-    }
-
-    function uploadAvatar(file) {
-        const avatarRef = storage.ref('avatars/' + myUid + '.jpg');
-        avatarRef.put(file).then(() => {
-            loadAvatar(myUid, profileAvatar);
-            alert('✅ Аватар обновлён!');
-        }).catch(err => {
-            alert('❌ Ошибка: ' + err.message);
-        });
-    }
-
-    profileAvatar.onclick = () => fileInput.click();
-    fileInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) uploadAvatar(file);
-        fileInput.value = '';
-    };
-
-    // ============================================================
-    // 8. ОТКРЫТИЕ ПРОФИЛЯ
-    // ============================================================
-    profileBtn.onclick = () => {
-        profileId.textContent = myId;
-        loadAvatar(myUid, profileAvatar);
-        profileModal.classList.add('active');
-    };
-    closeProfileBtn.onclick = () => profileModal.classList.remove('active');
-    profileModal.onclick = (e) => { if (e.target === profileModal) profileModal.classList.remove('active'); };
-    copyIdBtn.onclick = () => {
-        navigator.clipboard.writeText(myId).then(() => {
-            alert('✅ ID скопирован!');
-        }).catch(() => {
-            const range = document.createRange();
-            range.selectNode(profileId);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            document.execCommand('copy');
-            alert('✅ ID скопирован!');
-        });
-    };
-
-    // ============================================================
-    // 9. ТЕМЫ
+    // 7. ТЕМЫ
     // ============================================================
     const themeNames = ['theme-black', 'theme-white', 'theme-yellow', 'theme-red', 'theme-blue'];
     let themeIndex = parseInt(localStorage.getItem('theme_index')) || 0;
@@ -316,7 +266,7 @@
     };
 
     // ============================================================
-    // 10. ВХОД ПО ID
+    // 8. ВХОД ПО ID
     // ============================================================
     setIdBtn.onclick = () => {
         let newId = setIdInput.value.trim().toUpperCase();
@@ -330,7 +280,7 @@
     addFriendInput.oninput = function() { this.value = this.value.toUpperCase(); };
 
     // ============================================================
-    // 11. ОНЛАЙН
+    // 9. ОНЛАЙН
     // ============================================================
     const onlineRef = db.ref('online/' + myUid);
     onlineRef.set({ online: true, lastSeen: Date.now() });
@@ -345,7 +295,7 @@
     }
 
     // ============================================================
-    // 12. ПЕЧАТАЕТ
+    // 10. ПЕЧАТАЕТ
     // ============================================================
     msgInput.onkeydown = () => {
         if(!currentChatId) return;
@@ -368,7 +318,7 @@
     }
 
     // ============================================================
-    // 13. КОНТАКТЫ
+    // 11. КОНТАКТЫ
     // ============================================================
     function loadContacts() {
         db.ref('contacts/' + myUid).once('value', snap => {
@@ -427,7 +377,7 @@
     };
 
     // ============================================================
-    // 14. ГРУППЫ
+    // 12. ГРУППЫ
     // ============================================================
     function loadGroups() {
         db.ref('groups').once('value', snap => {
@@ -509,7 +459,7 @@
     };
 
     // ============================================================
-    // 15. ОТКРЫТЬ ЧАТ (ОДИН СЛУШАТЕЛЬ)
+    // 13. ОТКРЫТЬ ЧАТ (ОДИН СЛУШАТЕЛЬ)
     // ============================================================
     window.openChat = function(id, type) {
         if (currentChatId === id && chatType === type) return;
@@ -531,7 +481,7 @@
     };
 
     // ============================================================
-    // 16. СООБЩЕНИЯ
+    // 14. СООБЩЕНИЯ
     // ============================================================
     function loadMessages(chatId, type) {
         const ref = db.ref('chats/' + type + '/' + chatId);
@@ -547,14 +497,6 @@
 
         const sender = data.from === myUid ? 'Вы' : (contacts[data.from]?.nick || groups[data.from]?.members?.[data.from]?.nick || 'anon');
         const senderNick = data.from === myUid ? nick : (contacts[data.from]?.nick || groups[data.from]?.members?.[data.from]?.nick || 'anon');
-
-        // Аватарка
-        let avatarHtml = `<img class="avatar" src="" alt="avatar" id="avatar_${data.msgId}">`;
-        if (data.from === myUid) {
-            loadAvatar(myUid, document.getElementById('avatar_' + data.msgId));
-        } else if (data.from) {
-            loadAvatar(data.from, document.getElementById('avatar_' + data.msgId));
-        }
 
         let content = '';
         if(data.text) {
@@ -578,7 +520,7 @@
         }
 
         div.innerHTML = `
-            ${avatarHtml}
+            ${getAvatarHtml(senderNick)}
             <div class="content">
                 <div class="nick">
                     ${sender}
@@ -608,7 +550,7 @@
     }
 
     // ============================================================
-    // 17. РЕАКЦИЯ (только ❤️)
+    // 15. РЕАКЦИЯ (только ❤️)
     // ============================================================
     window.addReaction = function(msgId, emoji) {
         if(emoji !== '❤️') return;
@@ -623,7 +565,7 @@
     };
 
     // ============================================================
-    // 18. ИИ (ГОУГЛ)
+    // 16. ИИ (ГОУГЛ)
     // ============================================================
     async function askAI(question) {
         if (!question) return alert('Напиши вопрос');
@@ -655,7 +597,7 @@
     };
 
     // ============================================================
-    // 19. ОТПРАВКА
+    // 17. ОТПРАВКА
     // ============================================================
     function sendToFirebase(data) {
         if(!currentChatId) { alert('Выберите чат'); return; }
@@ -686,7 +628,7 @@
     };
 
     // ============================================================
-    // 20. ОБНОВЛЕНИЕ
+    // 18. ОБНОВЛЕНИЕ
     // ============================================================
     db.ref('contacts/' + myUid).on('value', loadContacts);
     db.ref('groups').on('value', loadGroups);
@@ -697,7 +639,31 @@
     searchContacts.oninput = renderContacts;
 
     // ============================================================
-    // 21. ЗАПУСК
+    // 19. ПРОФИЛЬ
+    // ============================================================
+    profileBtn.onclick = () => {
+        profileId.textContent = myId;
+        profileAvatar.innerHTML = nick.charAt(0).toUpperCase();
+        profileAvatar.style.background = getAvatarColor(nick);
+        profileModal.classList.add('active');
+    };
+    closeProfileBtn.onclick = () => profileModal.classList.remove('active');
+    profileModal.onclick = (e) => { if (e.target === profileModal) profileModal.classList.remove('active'); };
+    copyIdBtn.onclick = () => {
+        navigator.clipboard.writeText(myId).then(() => {
+            alert('✅ ID скопирован!');
+        }).catch(() => {
+            const range = document.createRange();
+            range.selectNode(profileId);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            alert('✅ ID скопирован!');
+        });
+    };
+
+    // ============================================================
+    // 20. ЗАПУСК
     // ============================================================
     loadContacts();
     loadGroups();
