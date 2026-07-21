@@ -6,10 +6,11 @@
     <title>💬 Мессенджер</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:#0b0d15; color:#e0e0e0; font-family:system-ui; display:flex; height:100vh; overflow:hidden; }
+        body { background:#0b0d15; color:#e0e0e0; font-family:system-ui; display:flex; height:100vh; overflow:hidden; transition:0.3s; }
         .theme-black { --bg: #0b0d15; --surface: #12161f; --border: #1e2538; --text: #e0e0e0; --accent: #6d8aff; --card: #1a2030; }
         .theme-white { --bg: #f5f5f5; --surface: #ffffff; --border: #d0d0d0; --text: #111111; --accent: #4a7acc; --card: #eef0f4; }
         .theme-yellow { --bg: #fef9e0; --surface: #fffbe6; --border: #e6d8a0; --text: #1e1a0a; --accent: #cc9900; --card: #f5edc0; }
@@ -45,10 +46,13 @@
         .msg .del-btn { background:#ff6b6b; border:none; color:#fff; border-radius:20px; padding:0 10px; font-size:11px; cursor:pointer; margin-left:8px; }
         .msg .time { font-size:10px; color:#667; margin-top:2px; }
         .msg .google-btn { display:inline-block; margin-top:6px; padding:4px 12px; background:#6d8aff; color:#fff; border-radius:30px; text-decoration:none; font-size:12px; }
+        .msg audio { width:100%; margin-top:4px; border-radius:20px; }
         .input-area { display:flex; align-items:center; gap:8px; background:var(--surface); padding:6px 12px; border-radius:40px; border:1px solid var(--border); }
         .input-area input { flex:1; background:transparent; border:none; color:var(--text); padding:12px 0; font-size:16px; outline:none; min-width:0; }
         .input-area button { background:transparent; border:none; color:var(--text); font-size:22px; cursor:pointer; padding:4px 8px; }
         .input-area .send { background:var(--accent); border-radius:40px; padding:8px 18px; font-weight:600; color:#fff; font-size:16px; }
+        .input-area .mic-btn { background:#ff6b6b; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:22px; cursor:pointer; transition:0.2s; }
+        .input-area .mic-btn.recording { background:#ff0000; transform:scale(1.1); }
         #typing { font-size:13px; color:#667; font-style:italic; display:none; margin-bottom:4px; }
         .hidden { display:none; }
         .id-btn { background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:30px; padding:4px 16px; font-size:14px; cursor:pointer; }
@@ -115,6 +119,7 @@
         <input id="msgInput" placeholder="Сообщение..." autofocus>
         <button id="aiBtn" style="background:#00cc88; border-radius:40px; padding:6px 12px; color:#000; font-weight:600; font-size:14px;">🧠</button>
         <button id="sendBtn" class="send">➤</button>
+        <div id="micBtn" class="mic-btn">🎤</div>
     </div>
 </div>
 
@@ -146,6 +151,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const storage = firebase.storage();
 
     // ============================================================
     // 2. ЗВУК
@@ -206,6 +212,7 @@
     const msgInput = document.getElementById('msgInput');
     const sendBtn = document.getElementById('sendBtn');
     const aiBtn = document.getElementById('aiBtn');
+    const micBtn = document.getElementById('micBtn');
     const chatLabel = document.getElementById('chatLabel');
     const unreadBadge = document.getElementById('unreadBadge');
     const typingDiv = document.getElementById('typing');
@@ -239,6 +246,9 @@
     let unreadCount = 0;
     let nick = prompt('Введите ваш ник:') || 'anon';
     let currentListener = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording = false;
 
     myIdDisplay.textContent = myId;
     myNickDisplay.textContent = nick;
@@ -476,7 +486,7 @@
     };
 
     // ============================================================
-    // 14. СООБЩЕНИЯ (ИСПРАВЛЕНО)
+    // 14. СООБЩЕНИЯ
     // ============================================================
     function loadMessages(chatId, type) {
         const ref = db.ref('chats/' + type + '/' + chatId);
@@ -503,6 +513,9 @@
             if (data.googleLink) {
                 content += `<a href="${data.googleLink}" target="_blank" class="google-btn">🔍 Посмотреть в Google</a>`;
             }
+        }
+        if(data.audio) {
+            content += `<audio controls src="${data.audio}"></audio>`;
         }
 
         const time = new Date(data.timestamp).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
@@ -564,7 +577,6 @@
     // ============================================================
     async function askAI(question) {
         if (!question) return alert('Напиши вопрос');
-        // Показываем вопрос пользователя
         sendToFirebase({ text: enc(question) });
         try {
             const apiKey = 'AIzaSyD4YKI6T_j8j02tZQl8lZ0d5KJkK9JtYi0';
@@ -592,7 +604,51 @@
     };
 
     // ============================================================
-    // 17. ОТПРАВКА
+    // 17. ГОЛОСОВЫЕ СООБЩЕНИЯ
+    // ============================================================
+    micBtn.onmousedown = startRecording;
+    micBtn.onmouseup = stopRecording;
+    micBtn.onmouseleave = stopRecording;
+
+    async function startRecording() {
+        if (!currentChatId) { alert('Выберите чат'); return; }
+        if (isRecording) return;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            recordedChunks = [];
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                const file = new File([blob], 'voice.webm', { type: 'audio/webm' });
+                const storageRef = storage.ref('voice/' + myUid + '/' + Date.now() + '_voice.webm');
+                await storageRef.put(file);
+                const url = await storageRef.getDownloadURL();
+                sendToFirebase({ audio: url });
+                stream.getTracks().forEach(t => t.stop());
+                isRecording = false;
+                micBtn.classList.remove('recording');
+                micBtn.textContent = '🎤';
+            };
+            mediaRecorder.start();
+            isRecording = true;
+            micBtn.classList.add('recording');
+            micBtn.textContent = '⏹️';
+        } catch {
+            alert('Нет доступа к микрофону');
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+    }
+
+    // ============================================================
+    // 18. ОТПРАВКА
     // ============================================================
     function sendToFirebase(data) {
         if(!currentChatId) { alert('Выберите чат'); return; }
@@ -623,7 +679,7 @@
     };
 
     // ============================================================
-    // 18. ОБНОВЛЕНИЕ
+    // 19. ОБНОВЛЕНИЕ
     // ============================================================
     db.ref('contacts/' + myUid).on('value', loadContacts);
     db.ref('groups').on('value', loadGroups);
@@ -634,7 +690,7 @@
     searchContacts.oninput = renderContacts;
 
     // ============================================================
-    // 19. ПРОФИЛЬ
+    // 20. ПРОФИЛЬ
     // ============================================================
     profileBtn.onclick = () => {
         profileId.textContent = myId;
@@ -658,7 +714,7 @@
     };
 
     // ============================================================
-    // 20. ЗАПУСК
+    // 21. ЗАПУСК
     // ============================================================
     loadContacts();
     loadGroups();
